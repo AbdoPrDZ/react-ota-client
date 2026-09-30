@@ -35,6 +35,21 @@ npm install ota-client
 yarn add ota-client
 ```
 
+From GitHub, before the package is on the registry:
+
+```sh
+npm install github:AbdoPrDZ/react-ota-client
+```
+
+Note that the repository is named `react-ota-client` while the npm package is
+named `ota-client` — they are not the same identifier, so the GitHub spec above
+is not a drop-in for `ota-client`. Pin a tag or a commit rather than a branch
+in anything you deploy:
+
+```sh
+npm install github:AbdoPrDZ/react-ota-client#v1.0.0
+```
+
 The Android module is picked up by autolinking. Confirm it:
 
 ```sh
