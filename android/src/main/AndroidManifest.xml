@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Only used when a new APK is downloaded by the system installer. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Needed on API 30+ to resolve a browser for the APK download URL. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <application>
+        <!--
+          Optional native-first entry point. The host app makes it the launcher
+          (android.intent.category.LAUNCHER) if it wants the check to run before
+          React Native boots. The JS-first flow (OTAProvider) does not need it.
+        -->
+        <activity
+            android:name="com.otaclient.ota.OtaSplashActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.OtaClient.Splash" />
+
+        <activity
+            android:name="com.otaclient.ota.OtaConfigureActivity"
+            android:exported="false"
+            android:theme="@style/Theme.OtaClient.Configure" />
+    </application>
+
+</manifest>

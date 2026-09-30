@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Android / Gradle
+android/build/
+android/.gradle/
+android/local.properties
+android/.cxx/
+.gradle/
+build/
+*.iml
+*.hprof
+
+# IDE
+.idea/
+.vscode/
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

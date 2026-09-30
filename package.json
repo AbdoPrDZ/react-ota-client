@@ -1,0 +1,64 @@
+{
+  "name": "ota-client",
+  "version": "1.0.0",
+  "description": "Over-the-air JavaScript bundle updates for React Native (Android). Native Kotlin update engine, a typed JS API, ready-made React components and a build/publish CLI.",
+  "keywords": [
+    "react-native",
+    "android",
+    "ota",
+    "hot-update",
+    "code-push",
+    "bundle",
+    "updates"
+  ],
+  "license": "MIT",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "types": "src/index.ts",
+  "source": "src/index.ts",
+  "bin": {
+    "ota-client": "cli/index.js"
+  },
+  "files": [
+    "src",
+    "android/build.gradle",
+    "android/gradle.properties",
+    "android/consumer-rules.pro",
+    "android/src",
+    "cli",
+    "react-native.config.js",
+    "README.md",
+    "LICENSE",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/*.test.ts",
+    "!**/*.test.tsx"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "dotenv": "^17.4.2",
+    "fs-extra": "^11.3.5",
+    "tar": "^7.5.16"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.71.0"
+  },
+  "devDependencies": {
+    "@react-native/eslint-config": "0.85.3",
+    "@react-native/typescript-config": "0.85.3",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.0",
+    "eslint": "^8.19.0",
+    "prettier": "2.8.8",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">= 18"
+  }
+}

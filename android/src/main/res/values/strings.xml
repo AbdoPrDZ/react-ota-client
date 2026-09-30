@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown while the native check runs before React Native boots. -->
+    <string name="ota_splash_title">Update</string>
+    <string name="ota_loading">Checking for updates…</string>
+
+    <string name="ota_update_title">Update available</string>
+    <string name="ota_bundle_update_message">A new update is ready to download. Install it now?</string>
+    <string name="ota_app_update_message">A new app version is available. Download and install it?</string>
+    <string name="ota_install">Install</string>
+    <string name="ota_not_now">Not now</string>
+
+    <string name="ota_downloading">Downloading update… %1$d%%</string>
+    <string name="ota_downloading_unknown_size">Downloading update…</string>
+    <string name="ota_download_failed">The update could not be downloaded. Starting the current version.</string>
+
+    <!-- Built-in server setup screen. -->
+    <string name="ota_configure_title">Update server</string>
+    <string name="ota_configure_description">Point this app at your OTA server to receive bundle updates.</string>
+    <string name="ota_configure_base_url">API base URL</string>
+    <string name="ota_configure_api_version">API version</string>
+    <string name="ota_configure_api_key">API key</string>
+    <string name="ota_configure_save">Save</string>
+    <string name="ota_configure_saved">Saved</string>
+</resources>
