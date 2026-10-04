@@ -80,6 +80,10 @@ class OTAClient private constructor(private val appContext: Context) {
     val settings = config
 
     if (!settings.isConfigured) {
+      Log.w(
+        TAG,
+        "No API base URL configured; set ota_client_api_base_url in the manifest or call configure()"
+      )
       return false
     }
 
@@ -104,6 +108,10 @@ class OTAClient private constructor(private val appContext: Context) {
     val settings = config
 
     if (!settings.isConfigured) {
+      Log.w(
+        TAG,
+        "No API base URL configured; set ota_client_api_base_url in the manifest or call configure()"
+      )
       return null
     }
 

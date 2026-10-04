@@ -78,7 +78,16 @@ object OtaHost {
    */
   fun applicationMetaData(context: Context): Bundle? =
     try {
-      context.applicationContext.applicationInfo.metaData
+      val app = context.applicationContext
+
+      // `context.applicationInfo.metaData` is regularly null inside the app
+      // process: the cached ApplicationInfo is built without GET_META_DATA.
+      // Asking the PackageManager explicitly is the only reliable source.
+      val viaPackageManager = app.packageManager
+        .getApplicationInfo(app.packageName, PackageManager.GET_META_DATA)
+        .metaData
+
+      viaPackageManager ?: app.applicationInfo.metaData
     } catch (e: Exception) {
       Log.w(TAG, "Unable to read application meta-data", e)
       null

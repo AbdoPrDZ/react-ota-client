@@ -258,6 +258,9 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
         if (mountedRef.current) {
           setCheck(result);
+          // The overlay derives its visibility from `status`, so a manual check
+          // has to move the status too or the result stays invisible.
+          setStatus(result.haveUpdate ? 'update-available' : 'ready', native);
         }
 
         return result;

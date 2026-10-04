@@ -329,6 +329,31 @@ if (status === 'update-available' && check?.haveBundleUpdate) {
 }
 ```
 
+### Checking on your own schedule
+
+Pass `autoCheck={false}` to stop the provider checking on mount, then call
+`checkForUpdates()` yourself. It runs the same request the automatic check does
+and moves `status` to `update-available` or `ready`, so the built-in overlay
+still reacts:
+
+```tsx
+<OTAProvider autoCheck={false}>
+  <App />
+</OTAProvider>
+```
+
+```tsx
+function UpdateButton() {
+  const { checkForUpdates } = useOTA();
+
+  return <Button title="Check for updates" onPress={() => void checkForUpdates()} />;
+}
+```
+
+This is also how you avoid an unattended `restartApp()`, which kills the process
+once a bundle is installed. Do not combine `autoCheck={false}` with the
+native-first flow below, or the bundle is checked twice.
+
 ### Server setup at runtime
 
 ```tsx
@@ -496,6 +521,21 @@ the rollback described above. If it does not, the bundle threw *after*
 **Nothing happens in debug** — by design, the engine stands down in debuggable
 builds so Metro serves the bundle. Set `ota_client_allow_in_debug` to `true` to
 test the real path.
+
+**No request is sent, or the configure screen opens on launch** — the engine has
+no API base URL, so `healthCheck()` returns before doing any I/O. Set
+`ota_client_api_base_url` on the host `<application>` tag (see the
+[meta-data reference](#manifest-meta-data-reference)), or call
+`OtaClient.configure()`. Watch for it in logcat under the `OtaClient` tag:
+
+```
+W OtaClient: No API base URL configured; set ota_client_api_base_url in the manifest or call configure()
+```
+
+**The overlay stays hidden after `checkForUpdates()`** — the overlay derives its
+visibility from `status`, so a manual check must set it. Calling the imperative
+`OtaClient.checkUpdate()` returns the result but does not touch the provider's
+state; use `checkForUpdates()` from `useOTA()` when you want the UI to react.
 
 **Plain JS in a test environment** — the package ships TypeScript source, which
 Metro compiles. Jest needs the RN preset to transform it; if your `transformIgnorePatterns`
