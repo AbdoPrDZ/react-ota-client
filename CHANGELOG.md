@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-10-05
+
+### Fixed
+
+- **The APK install link was rejected with 401.** `appUpdateUrl()` appends the
+  configured API key as `&api_key=<url-encoded>` because the link is opened by the
+  OS browser, which cannot set the `API-KEY` header — so the server answered 401
+  and the new version could not be installed. Needs a server that accepts the key
+  from the query (OTACenter 1.5.2+); older servers simply ignore the parameter.
+
 ## [1.3.0] - 2026-10-05
 
 ### Added

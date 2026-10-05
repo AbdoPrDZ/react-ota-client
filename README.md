@@ -335,10 +335,14 @@ OtaClient.getBundleInfo(): Promise<OtaBundleInfo>
 OtaClient.getAppUpdateUrl(): Promise<string>
 OtaClient.openAppUpdate({ url? }): Promise<boolean>
 OtaClient.restartApp(): Promise<void>
-
 OtaClient.addDownloadProgressListener(cb): () => void
 OtaClient.addErrorListener(cb): () => void
 ```
+
+`getAppUpdateUrl()` returns an APK link that the OS opens in a browser, so it carries
+the API key (and device id) as query parameters — a browser cannot send the
+`API-KEY` header. Needs a server that accepts the key from the query
+(OTACenter 1.5.2+).
 
 ### Hooks
 

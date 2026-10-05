@@ -20,6 +20,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import java.net.URLEncoder
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Parameters
 import io.ktor.http.isSuccess
@@ -270,9 +271,9 @@ class OTAClient private constructor(private val appContext: Context) {
   }
 
   /**
-   * Download URL for a new APK. The session token and device id travel as query
-   * parameters because the request is opened by a browser, which cannot set
-   * headers.
+   * Download URL for a new APK. The API key, session token and device id travel
+   * as query parameters because the request is opened by a browser, which cannot
+   * set headers.
    */
   fun appUpdateUrl(check: CheckUpdate = lastCheck ?: CheckUpdate(false, false, false, null)): String {
     val settings = config
@@ -280,8 +281,9 @@ class OTAClient private constructor(private val appContext: Context) {
       ?: throw OtaException("No app version update to open")
     val session = check.appInfo?.session.orEmpty()
     val deviceId = AppStorage.deviceInfo(appContext).androidId.orEmpty()
+    val apiKey = URLEncoder.encode(settings.apiKey, "UTF-8")
 
-    return "${settings.apiRootUrl}/app/update/version/$updateId?did=$deviceId&token=$session"
+    return "${settings.apiRootUrl}/app/update/version/$updateId?did=$deviceId&token=$session&api_key=$apiKey"
   }
 
   /**
