@@ -45,6 +45,16 @@ object AppStorage {
    */
   const val FONTS_DIR = "fonts"
 
+  /**
+   * Directory inside the OTA archive holding images shipped with the bundle.
+   *
+   * React Native resolves a `require()`d image through `resources.getIdentifier()`
+   * against the APK only, and exposes no hook to override that the way
+   * [FONTS_DIR] fonts get one. Shipping them here and letting JavaScript build a
+   * `file://` URI is what makes an image updatable without a new APK.
+   */
+  const val ASSETS_DIR = "assets"
+
   /** Bundle name used when the host has no `manifest.json` in its assets. */
   const val DEFAULT_BUNDLE_NAME = "index.android.bundle"
 

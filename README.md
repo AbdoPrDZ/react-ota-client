@@ -210,8 +210,8 @@ the previous one:
 2. It is expanded into `extracted/`, rejecting entries that escape the directory.
 3. `manifest.json` and the named bundle must both exist.
 4. Size and MD5 from the manifest are verified.
-5. Only then is the bundle copied to its final directory, together with
-   `fonts/` when the archive carries one.
+5. Only then is the bundle copied to its final directory, together with `fonts/`
+   and `assets/` when the archive carries them.
 
 `installBundle()` points `RUNNING_BUNDLE_DIR` at the new directory, remembers the
 old one as `LAST_GOOD_BUNDLE_DIR`, and relaunches the app.
@@ -226,8 +226,10 @@ tofu. An archive may therefore carry a `fonts/` directory:
 my-app-1.0.0-1.0.1.tar.gz
 ├── my-app-1.0.0-1.0.1.android.bundle
 ├── manifest.json
-└── fonts/
-    └── MaterialCommunityIcons.ttf
+├── fonts/
+│   └── MaterialCommunityIcons.ttf
+└── assets/
+    └── Logo.png
 ```
 
 Each `.ttf`/`.otf` is registered with `ReactFontManager.addCustomFont()` under
@@ -237,14 +239,42 @@ Each `.ttf`/`.otf` is registered with `ReactFontManager.addCustomFont()` under
 happens while React Native boots, before the first icon renders; a font that
 fails to load is logged and skipped, leaving the APK copy in place.
 
-Two things to keep in mind:
+The manifest may list the fonts under `fonts` for traceability; the engine reads
+them from disk and does not require the entry.
 
-- The manifest may list the fonts under `fonts` for traceability; the engine
-  reads them from disk and does not require the entry.
-- **Images are not supported this way.** A `require()`d image resolves through
-  `resources.getIdentifier()`, and React Native exposes no override for it, so
-  images have to stay in the APK. Do not put them in the archive expecting them
-  to apply.
+### Shipping images with a bundle
+
+Images work differently, because React Native offers no equivalent of
+`addCustomFont` for them: a `require()`d image resolves through
+`resources.getIdentifier()` against the APK, and there is no hook to override
+that. Instead, put the files in the archive's `assets/` directory and address
+them by path. The engine stages that directory next to the bundle, and
+`OTAImage` builds a `file://` URI from the active bundle directory:
+
+```tsx
+import { OTAImage } from 'ota-client';
+import Logo from '@/assets/Logo.png';
+
+<OTAImage name="Logo.png" source={Logo} style={styles.logo} resizeMode="contain" />;
+```
+
+**Always keep the `source` fallback.** `directory` is `null` whenever the
+embedded APK copy is running — which is every device that has not installed an
+update yet — and `OTAImage` falls back to the `require()`d copy in that case.
+Dropping it makes the image vanish for those users.
+
+`useBundleAssetUri(name)` and `bundleAssetUri(directory, name)` are available if
+you would rather build the source yourself:
+
+```tsx
+const uri = useBundleAssetUri('Logo.png');
+
+<Image source={uri ? { uri } : Logo} />;
+```
+
+`name` is relative to the bundle's `assets/` directory. The active directory is
+also exposed as `getState().bundle.directory`, so rollbacks and older bundle
+versions keep resolving correctly without any path guessing in JavaScript.
 
 ### Automatic rollback
 

@@ -425,6 +425,11 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
     } else {
       putNull("path")
     }
+    if (state.directory != null) {
+      putString("directory", state.directory)
+    } else {
+      putNull("directory")
+    }
   }
 
   private fun manifestMap(manifest: Manifest): WritableMap =

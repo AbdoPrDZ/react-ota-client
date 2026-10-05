@@ -245,7 +245,8 @@ class OTAClient private constructor(private val appContext: Context) {
       bundleFile.copyTo(finalBundleFile, overwrite = true)
       manifestFile.copyTo(finalManifestFile, overwrite = true)
 
-      val fonts = stageFonts(extractDir, finalDir)
+      val fonts = stageDirectory(extractDir, finalDir, AppStorage.FONTS_DIR)
+      val assets = stageDirectory(extractDir, finalDir, AppStorage.ASSETS_DIR)
 
       if (!finalBundleFile.isFile || !finalManifestFile.isFile) {
         throw OtaException("Staging ${finalDir.absolutePath} failed")
@@ -255,6 +256,10 @@ class OTAClient private constructor(private val appContext: Context) {
 
       if (fonts.isNotEmpty()) {
         Log.i(TAG, "Staged ${fonts.size} bundle font(s): ${fonts.joinToString()}")
+      }
+
+      if (assets.isNotEmpty()) {
+        Log.i(TAG, "Staged ${assets.size} bundle asset(s) under ${AppStorage.ASSETS_DIR}/")
       }
 
       return DownloadBundle(finalDir, manifest, finalBundleFile, finalManifestFile)
@@ -280,40 +285,41 @@ class OTAClient private constructor(private val appContext: Context) {
   }
 
   /**
-   * Copies `<archive>/fonts` into the staging directory, so a bundle can ship new
-   * glyphs without a new APK.
+   * Copies one top-level directory out of the extracted archive into the staging
+   * directory, so a bundle can ship more than just JavaScript.
    *
-   * @return the names of the staged font files, empty when the archive carries
-   *   none.
+   * Used for [AppStorage.FONTS_DIR], which the engine registers with React
+   * Native at boot, and [AppStorage.ASSETS_DIR], which JavaScript reaches through
+   * `file://` URIs. Staging used to keep only the bundle and `manifest.json`, so
+   * anything else in the archive was silently dropped.
+   *
+   * @return the names of the staged files, empty when the archive carries none.
    */
-  private fun stageFonts(extractDir: File, finalDir: File): List<String> {
-    val source = File(extractDir, AppStorage.FONTS_DIR)
+  private fun stageDirectory(extractDir: File, finalDir: File, name: String): List<String> {
+    val source = File(extractDir, name)
 
     if (!source.isDirectory) {
       return emptyList()
     }
 
-    val fonts = source.listFiles { file -> file.isFile }
-      ?.filter { FONT_EXTENSIONS.contains(it.extension.lowercase()) }
-      ?.sortedBy { it.name }
-      .orEmpty()
+    val files = source.listFiles { file -> file.isFile }?.sortedBy { it.name }.orEmpty()
 
-    if (fonts.isEmpty()) {
+    if (files.isEmpty()) {
       return emptyList()
     }
 
-    val target = File(finalDir, AppStorage.FONTS_DIR)
+    val target = File(finalDir, name)
     target.deleteRecursively()
 
     if (!target.mkdirs()) {
       throw OtaException("Unable to create ${target.absolutePath}")
     }
 
-    for (font in fonts) {
-      font.copyTo(File(target, font.name), overwrite = true)
+    for (file in files) {
+      file.copyTo(File(target, file.name), overwrite = true)
     }
 
-    return fonts.map { it.name }
+    return files.map { it.name }
   }
 
   private fun verifyBundle(manifest: Manifest, bundleFile: File) {
@@ -346,9 +352,6 @@ class OTAClient private constructor(private val appContext: Context) {
     private const val TAG = "OtaClient"
     private const val REQUEST_TIMEOUT_MS = 5 * 60 * 1000L
     private const val CONNECT_TIMEOUT_MS = 30 * 1000L
-
-    /** Font file extensions a bundle may ship under [AppStorage.FONTS_DIR]. */
-    private val FONT_EXTENSIONS = setOf("ttf", "otf")
 
     @Volatile
     private var _instance: OTAClient? = null

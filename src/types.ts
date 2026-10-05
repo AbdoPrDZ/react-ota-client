@@ -50,6 +50,14 @@ export interface OtaBundleInfo {
   source: OtaBundleSource;
   /** Absolute path of the active bundle, `null` while the embedded copy is used. */
   path: string | null;
+  /**
+   * Absolute path of the directory holding the active bundle and its `fonts/` and
+   * `assets/` folders, `null` while the embedded copy is used.
+   *
+   * Build `file://` URIs from this to reach images that ship with the bundle; see
+   * `useBundleAssetUri`.
+   */
+  directory: string | null;
 }
 
 export interface OtaAppInfo {

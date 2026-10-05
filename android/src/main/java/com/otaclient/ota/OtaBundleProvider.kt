@@ -219,22 +219,24 @@ object OtaBundleProvider {
     val directory = AppStorage.RUNNING_BUNDLE_DIR
     val enabled = OtaConfig.isEnabled(app)
 
-    if (directory == null || !enabled) {
-      return BundleState(
-        manifest = AppStorage.MANIFEST,
-        source = BundleState.SOURCE_EMBEDDED,
-        path = null,
-      )
-    }
-
-    val manifest: Manifest = AppStorage.MANIFEST
-
+  if (directory == null || !enabled) {
     return BundleState(
-      manifest = manifest,
-      source = BundleState.SOURCE_DOWNLOADED,
-      path = File(directory, manifest.bundle).absolutePath,
+      manifest = AppStorage.MANIFEST,
+      source = BundleState.SOURCE_EMBEDDED,
+      path = null,
+      directory = null,
     )
   }
+
+  val manifest: Manifest = AppStorage.MANIFEST
+
+  return BundleState(
+    manifest = manifest,
+    source = BundleState.SOURCE_DOWNLOADED,
+    path = File(directory, manifest.bundle).absolutePath,
+    directory = directory.absolutePath,
+  )
+}
 
   /**
    * `true` while a bundle is running that has not been confirmed yet.

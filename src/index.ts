@@ -26,6 +26,8 @@ export type {
 } from './OtaClient';
 
 export { useOTA, useOTABundleInfo, useOtaNativeState } from './hooks/useOTA';
+export { bundleAssetUri, useBundleAssetUri } from './bundleAssets';
+export type { BundleDirectorySource } from './bundleAssets';
 
 export { OtaContext, useOtaContext, useOptionalOtaContext } from './context';
 export type { OtaActions, OtaContextValue, OtaServerConfigSnapshot } from './context';
@@ -52,6 +54,9 @@ export type {
 
 export { OTASplashScreen } from './components/OTASplashScreen';
 export type { OTASplashScreenProps } from './components/OTASplashScreen';
+
+export { OTAImage } from './components/OTAImage';
+export type { OTAImageProps } from './components/OTAImage';
 
 export {
   OtaLinkingError,
