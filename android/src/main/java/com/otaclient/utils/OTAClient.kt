@@ -245,11 +245,17 @@ class OTAClient private constructor(private val appContext: Context) {
       bundleFile.copyTo(finalBundleFile, overwrite = true)
       manifestFile.copyTo(finalManifestFile, overwrite = true)
 
+      val fonts = stageFonts(extractDir, finalDir)
+
       if (!finalBundleFile.isFile || !finalManifestFile.isFile) {
         throw OtaException("Staging ${finalDir.absolutePath} failed")
       }
 
       Log.i(TAG, "Staged bundle ${manifest.version} in ${finalDir.absolutePath}")
+
+      if (fonts.isNotEmpty()) {
+        Log.i(TAG, "Staged ${fonts.size} bundle font(s): ${fonts.joinToString()}")
+      }
 
       return DownloadBundle(finalDir, manifest, finalBundleFile, finalManifestFile)
     } catch (e: Exception) {
@@ -271,6 +277,43 @@ class OTAClient private constructor(private val appContext: Context) {
     val deviceId = AppStorage.deviceInfo(appContext).androidId.orEmpty()
 
     return "${settings.apiRootUrl}/app/update/version/$updateId?did=$deviceId&token=$session"
+  }
+
+  /**
+   * Copies `<archive>/fonts` into the staging directory, so a bundle can ship new
+   * glyphs without a new APK.
+   *
+   * @return the names of the staged font files, empty when the archive carries
+   *   none.
+   */
+  private fun stageFonts(extractDir: File, finalDir: File): List<String> {
+    val source = File(extractDir, AppStorage.FONTS_DIR)
+
+    if (!source.isDirectory) {
+      return emptyList()
+    }
+
+    val fonts = source.listFiles { file -> file.isFile }
+      ?.filter { FONT_EXTENSIONS.contains(it.extension.lowercase()) }
+      ?.sortedBy { it.name }
+      .orEmpty()
+
+    if (fonts.isEmpty()) {
+      return emptyList()
+    }
+
+    val target = File(finalDir, AppStorage.FONTS_DIR)
+    target.deleteRecursively()
+
+    if (!target.mkdirs()) {
+      throw OtaException("Unable to create ${target.absolutePath}")
+    }
+
+    for (font in fonts) {
+      font.copyTo(File(target, font.name), overwrite = true)
+    }
+
+    return fonts.map { it.name }
   }
 
   private fun verifyBundle(manifest: Manifest, bundleFile: File) {
@@ -303,6 +346,9 @@ class OTAClient private constructor(private val appContext: Context) {
     private const val TAG = "OtaClient"
     private const val REQUEST_TIMEOUT_MS = 5 * 60 * 1000L
     private const val CONNECT_TIMEOUT_MS = 30 * 1000L
+
+    /** Font file extensions a bundle may ship under [AppStorage.FONTS_DIR]. */
+    private val FONT_EXTENSIONS = setOf("ttf", "otf")
 
     @Volatile
     private var _instance: OTAClient? = null

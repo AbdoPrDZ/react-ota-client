@@ -36,6 +36,15 @@ object AppStorage {
   /** File name of the manifest, both in the OTA archive and in the APK assets. */
   const val MANIFEST_FILE = "manifest.json"
 
+  /**
+   * Directory inside the OTA archive holding fonts shipped with the bundle.
+   *
+   * React Native resolves a font family from `assets/fonts/<family>` in the APK
+   * only, so a bundle can never replace a font on its own. The engine registers
+   * whatever it finds here instead, before the first icon renders.
+   */
+  const val FONTS_DIR = "fonts"
+
   /** Bundle name used when the host has no `manifest.json` in its assets. */
   const val DEFAULT_BUNDLE_NAME = "index.android.bundle"
 

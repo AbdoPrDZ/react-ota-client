@@ -210,10 +210,41 @@ the previous one:
 2. It is expanded into `extracted/`, rejecting entries that escape the directory.
 3. `manifest.json` and the named bundle must both exist.
 4. Size and MD5 from the manifest are verified.
-5. Only then is the bundle copied to its final directory.
+5. Only then is the bundle copied to its final directory, together with
+   `fonts/` when the archive carries one.
 
 `installBundle()` points `RUNNING_BUNDLE_DIR` at the new directory, remembers the
 old one as `LAST_GOOD_BUNDLE_DIR`, and relaunches the app.
+
+### Shipping fonts with a bundle
+
+React Native resolves a font family from `assets/fonts/<family>` **inside the
+APK**, so an OTA update could never change a font and any new glyph rendered as
+tofu. An archive may therefore carry a `fonts/` directory:
+
+```
+my-app-1.0.0-1.0.1.tar.gz
+├── my-app-1.0.0-1.0.1.android.bundle
+├── manifest.json
+└── fonts/
+    └── MaterialCommunityIcons.ttf
+```
+
+Each `.ttf`/`.otf` is registered with `ReactFontManager.addCustomFont()` under
+**its file name without the extension**, which is what
+`react-native-vector-icons` passes as the family on Android — so
+`fonts/MaterialCommunityIcons.ttf` overrides the copy in the APK. Registration
+happens while React Native boots, before the first icon renders; a font that
+fails to load is logged and skipped, leaving the APK copy in place.
+
+Two things to keep in mind:
+
+- The manifest may list the fonts under `fonts` for traceability; the engine
+  reads them from disk and does not require the entry.
+- **Images are not supported this way.** A `require()`d image resolves through
+  `resources.getIdentifier()`, and React Native exposes no override for it, so
+  images have to stay in the APK. Do not put them in the archive expecting them
+  to apply.
 
 ### Automatic rollback
 

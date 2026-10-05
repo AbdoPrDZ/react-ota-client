@@ -1,8 +1,10 @@
 package com.otaclient.ota
 
 import android.content.Context
+import android.graphics.Typeface
 import android.os.Process
 import android.util.Log
+import com.facebook.react.common.assets.ReactFontManager
 import com.otaclient.data.BundleState
 import com.otaclient.data.Manifest
 import com.otaclient.utils.AppStorage
@@ -36,6 +38,9 @@ object OtaBundleProvider {
   private const val TAG = "OtaClient"
 
   private const val TEMP_DIR_PREFIX = "ota-new-update-"
+
+  /** Font file extensions accepted from a bundle's `fonts` directory. */
+  private val FONT_EXTENSIONS = setOf("ttf", "otf")
 
   /**
    * Path of the bundle to load, or `null` to let React Native fall back to the
@@ -78,7 +83,56 @@ object OtaBundleProvider {
       AppStorage.PENDING_PID = Process.myPid()
     }
 
+    registerBundleFonts(directory)
+
     return bundleFile.absolutePath
+  }
+
+  /**
+   * Registers the fonts shipped inside the active bundle so React Native uses
+   * them instead of the copies embedded in the APK.
+   *
+   * React Native resolves a font family from `assets/fonts/<family>` in the APK
+   * only, so a bundle could never change a font on its own. `ReactFontManager`
+   * checks its custom typeface cache before the asset folder, which makes this
+   * the only way an OTA update can ship new glyphs.
+   *
+   * The cache lives for the whole process, so this has to run before the first
+   * icon renders. [getJSBundleFile] is called exactly then, while React Native
+   * boots, and a font swap only ever happens together with a restart.
+   */
+  private fun registerBundleFonts(directory: File) {
+    val fontsDir = File(directory, AppStorage.FONTS_DIR)
+
+    if (!fontsDir.isDirectory) {
+      return
+    }
+
+    val fonts = fontsDir.listFiles { file -> file.isFile }
+      ?.filter { FONT_EXTENSIONS.contains(it.extension.lowercase()) }
+      ?.sortedBy { it.name }
+      .orEmpty()
+
+    if (fonts.isEmpty()) {
+      return
+    }
+
+    val manager = ReactFontManager.getInstance()
+
+    for (font in fonts) {
+      // react-native-vector-icons passes the file name without its extension as
+      // the family on Android, so the file name is the family to register under.
+      val family = font.nameWithoutExtension
+
+      try {
+        manager.addCustomFont(family, Typeface.createFromFile(font))
+        Log.i(TAG, "Registered bundle font '$family' from ${font.absolutePath}")
+      } catch (e: Exception) {
+        // A broken font must never stop the app from booting; React Native keeps
+        // resolving the copy embedded in the APK.
+        Log.w(TAG, "Unable to register bundle font ${font.absolutePath}", e)
+      }
+    }
   }
 
   /**
