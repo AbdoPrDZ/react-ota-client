@@ -287,6 +287,49 @@ class OTAClient private constructor(private val appContext: Context) {
   }
 
   /**
+   * Reports an activity event to the server (`POST {apiRoot}/app/event`).
+   *
+   * Fire-and-forget by design: a reported event is telemetry, so any failure
+   * resolves `false` and never throws into the update flow.
+   */
+  suspend fun reportEvent(event: String, message: String? = null, meta: String? = null): Boolean {
+    val settings = config
+
+    if (!settings.isConfigured) {
+      return false
+    }
+
+    return try {
+      val response = client.submitForm(
+        url = "${settings.apiRootUrl}/app/event",
+        formParameters = Parameters.build {
+          append("package", OtaHost.packageName(appContext))
+          append("version", OtaHost.versionName(appContext))
+          append("bundle", AppStorage.MANIFEST.version)
+          append("event", event)
+          if (!message.isNullOrBlank()) append("message", message)
+          if (!meta.isNullOrBlank()) append("meta", meta)
+        },
+      ) {
+        headers {
+          append("Accept", "application/json")
+          append("API-KEY", settings.apiKey)
+          append("X-Device-Info", deviceInfoHeader)
+        }
+      }
+
+      if (!response.status.isSuccess()) {
+        Log.w(TAG, "app/event returned ${response.status.value}")
+      }
+
+      response.status.isSuccess()
+    } catch (e: Exception) {
+      Log.w(TAG, "app/event failed: ${e.message}")
+      false
+    }
+  }
+
+  /**
    * Copies one top-level directory out of the extracted archive into the staging
    * directory, so a bundle can ship more than just JavaScript.
    *

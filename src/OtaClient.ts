@@ -13,6 +13,8 @@ import {
   OtaDownloadListener,
   OtaDownloadProgress,
   OtaDownloadResult,
+  OtaReportEvent,
+  OtaReportPayload,
   OtaServerConfig,
   OtaState,
 } from './types';
@@ -168,6 +170,32 @@ export const OtaClient = {
   /** Relaunches the launcher activity and kills the current process. */
   async restartApp(): Promise<void> {
     return unwrap(requireNative().restartApp());
+  },
+
+  /**
+   * Reports an activity event to the server (`POST /app/event`), which records it
+   * against the device, app and version. Fire-and-forget: a failure resolves
+   * `false` and never throws, because telemetry must not break the update flow.
+   *
+   * The engine reports rollbacks and successful launches on its own; the flow
+   * reports the user-driven events (available, downloaded, refused, failed).
+   */
+  async reportEvent(
+    event: OtaReportEvent,
+    payload: OtaReportPayload = {},
+  ): Promise<boolean> {
+    if (!isNativeAvailable()) {
+      return false;
+    }
+
+    try {
+      const meta =
+        Object.keys(payload).length > 0 ? JSON.stringify(payload) : null;
+
+      return await unwrap(requireNative().reportEvent(event, meta));
+    } catch {
+      return false;
+    }
   },
 
   /**

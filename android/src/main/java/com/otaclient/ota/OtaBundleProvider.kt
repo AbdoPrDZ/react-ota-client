@@ -8,7 +8,9 @@ import com.facebook.react.common.assets.ReactFontManager
 import com.otaclient.data.BundleState
 import com.otaclient.data.Manifest
 import com.otaclient.utils.AppStorage
+import com.otaclient.utils.OTAClient
 import com.otaclient.utils.deleteQuietly
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
@@ -143,8 +145,14 @@ object OtaBundleProvider {
     val app = context.applicationContext
     AppStorage.init(app)
 
-    AppStorage.RUNNING_BUNDLE_DIR?.let { AppStorage.LAST_GOOD_BUNDLE_DIR = it }
+    val running = AppStorage.RUNNING_BUNDLE_DIR
+
+    running?.let { AppStorage.LAST_GOOD_BUNDLE_DIR = it }
     AppStorage.PENDING_PID = 0
+
+    if (running != null) {
+      reportActivity(app, "bundle.launch_confirmed", "Bundle ${AppStorage.MANIFEST.version} is running")
+    }
   }
 
   /**
@@ -321,6 +329,26 @@ object OtaBundleProvider {
 
     AppStorage.PENDING_PID = 0
     AppStorage.loadManifest(context)
+
+    reportActivity(context, "update.rollback", "Bundle $version did not start")
+  }
+
+  /**
+   * Best-effort activity report from the native boot path, where there is no
+   * coroutine scope: a throwaway thread performs the request and logs failures.
+   */
+  private fun reportActivity(context: Context, event: String, message: String? = null) {
+    val app = context.applicationContext
+
+    Thread {
+      runCatching {
+        runBlocking {
+          OTAClient.instance(app).reportEvent(event, message = message)
+        }
+      }.onFailure {
+        Log.w(TAG, "Unable to report '$event'", it)
+      }
+    }.start()
   }
 }
 

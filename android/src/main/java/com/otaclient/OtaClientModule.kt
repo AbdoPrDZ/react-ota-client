@@ -199,6 +199,23 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
     promise.resolve(OtaConfig.openDownloadUrl(appContext, target))
   }
 
+  /**
+   * Reports an activity event to the server. `meta` is a JSON string (built in
+   * JS) so the bridge stays a plain string; a failure resolves `false`.
+   */
+  @ReactMethod
+  fun reportEvent(event: String, meta: String?, promise: Promise) {
+    scope.launch {
+      try {
+        promise.resolve(engine().reportEvent(event, meta = meta))
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        promise.reject(E_EVENT, e.message, e)
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ bundles
 
   @ReactMethod
@@ -492,5 +509,6 @@ private const val E_HEALTH = "E_OTA_HEALTH"
 private const val E_CHECK = "E_OTA_CHECK"
 private const val E_DOWNLOAD = "E_OTA_DOWNLOAD"
 private const val E_SWAP = "E_OTA_SWAP"
+private const val E_EVENT = "E_OTA_EVENT"
 private const val E_NO_VERSION_UPDATE = "E_OTA_NO_VERSION_UPDATE"
 private const val E_UNKNOWN = "E_OTA_UNKNOWN"

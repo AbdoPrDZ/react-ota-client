@@ -6,6 +6,7 @@ import {
   OtaConfigInput,
   OtaDeviceInfo,
   OtaDownloadResult,
+  OtaReportEvent,
   OtaServerConfig,
   OtaState,
 } from '../types';
@@ -41,6 +42,7 @@ interface OtaNativeModule {
   getAppUpdateUrl(): Promise<string>;
   openAppUpdate(url: string): Promise<boolean>;
   restartApp(): Promise<void>;
+  reportEvent(event: OtaReportEvent, meta: string | null): Promise<boolean>;
   addListener(eventName: string): void;
   removeListeners(count: number): void;
 }

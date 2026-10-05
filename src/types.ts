@@ -164,3 +164,20 @@ export interface OtaStatusSnapshot {
 }
 
 export type OtaDownloadListener = (progress: OtaDownloadProgress) => void;
+
+/** Events the engine reports to the server for activity logging. */
+export type OtaReportEvent =
+  | 'update.available'
+  | 'update.refused'
+  | 'update.downloaded'
+  | 'update.installed'
+  | 'update.failed'
+  | 'update.rollback'
+  | 'bundle.launch_confirmed'
+  | 'bundle.launch_failed';
+
+/** Free-form, JSON-serialisable metadata attached to a reported event. */
+export type OtaReportPayload = Record<
+  string,
+  string | number | boolean | null | undefined
+>;

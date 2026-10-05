@@ -335,6 +335,7 @@ OtaClient.getBundleInfo(): Promise<OtaBundleInfo>
 OtaClient.getAppUpdateUrl(): Promise<string>
 OtaClient.openAppUpdate({ url? }): Promise<boolean>
 OtaClient.restartApp(): Promise<void>
+OtaClient.reportEvent(event, payload?): Promise<boolean>   // activity log → server
 OtaClient.addDownloadProgressListener(cb): () => void
 OtaClient.addErrorListener(cb): () => void
 ```
@@ -377,6 +378,7 @@ function DebugBadge() {
 | `unconfiguredFallback` | `<OTAConfigureScreen />` | Shown when no API base URL is known. |
 | `showUpdateOverlay` | `true` | Render the built-in blocking update UI. |
 | `renderChildrenWhenUnsupported` | `true` | On iOS, render children instead of the boot screen. |
+| `reportEvents` | `true` | Report activity events to the server (`POST /app/event`). |
 
 A server can mark a version or a bundle update as **required** by returning
 `updateType: "force"` for it. While a forced update is pending, the built-in

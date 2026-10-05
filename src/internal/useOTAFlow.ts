@@ -6,6 +6,8 @@ import type {
   OtaCheckUpdateResult,
   OtaConfigInput,
   OtaDownloadProgress,
+  OtaReportEvent,
+  OtaReportPayload,
   OtaState,
   OtaStatus,
 } from '../types';
@@ -28,6 +30,11 @@ export interface UseOTAFlowOptions {
   onError?(error: Error): void;
   /** Server unreachable: the app keeps working, this is your offline hook. */
   onUnreachable?(state: OtaState | null): void;
+  /**
+   * Report activity events to the server (`POST /app/event`) so it can log what
+   * each device did. Default `true`. Set to `false` to opt out entirely.
+   */
+  reportEvents?: boolean;
 }
 
 const DEFAULT_CONFIRM_DELAY_MS = 2000;
@@ -62,6 +69,15 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
     setStatusState(next);
     optionsRef.current.onStatusChange?.(next, state);
+  }, []);
+
+  /** Fire-and-forget activity report; never throws into the flow. */
+  const report = useCallback((event: OtaReportEvent, payload?: OtaReportPayload) => {
+    if (optionsRef.current.reportEvents === false || !OtaClient.isSupported()) {
+      return;
+    }
+
+    OtaClient.reportEvent(event, payload).catch(() => {});
   }, []);
 
   useEffect(
@@ -174,6 +190,10 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
       if (result.haveUpdate) {
         opts.onUpdateAvailable?.(result);
+        report('update.available', {
+          version: result.appInfo?.availableUpdates.version?.name ?? null,
+          bundle: result.appInfo?.availableUpdates.bundle?.name ?? null,
+        });
         setStatus('update-available', state);
       } else {
         setStatus('ready', state);
@@ -189,10 +209,11 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
         setError(failure);
       }
 
+      report('update.failed', { message: failure.message });
       setStatus('failed', state);
       opts.onError?.(failure);
     }
-  }, [confirmDelayMs, markLaunchSucceeded, setStatus]);
+  }, [confirmDelayMs, markLaunchSucceeded, report, setStatus]);
 
   const configKey = useMemo(() => JSON.stringify(options.config ?? null), [options.config]);
 
@@ -227,7 +248,9 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
     });
 
     try {
-      await OtaClient.downloadAndInstall();
+      const result = await OtaClient.downloadBundle();
+      report('update.downloaded', { bundle: result.manifest.version });
+      await OtaClient.installBundle({ directory: result.downloadDir });
       // The process is being replaced; the screen stays on "downloading" on purpose.
     } catch (caught) {
       if (stale()) {
@@ -240,12 +263,13 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
         setError(failure);
       }
 
+      report('update.failed', { message: failure.message });
       setStatus('update-available', null);
       opts.onError?.(failure);
     } finally {
       unsubscribe();
     }
-  }, [setStatus]);
+  }, [report, setStatus]);
 
   const value = useMemo<OtaContextValue>(
     () => ({
@@ -285,6 +309,11 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
           return;
         }
 
+        report('update.refused', {
+          version:
+            check?.appInfo?.availableUpdates.version?.name ?? null,
+          bundle: check?.appInfo?.availableUpdates.bundle?.name ?? null,
+        });
         setDismissed(true);
       },
 
@@ -308,7 +337,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
         void run();
       },
     }),
-    [check, dismissed, downloadAndInstall, error, forceUpdate, markLaunchSucceeded, native, progress, run, setStatus, status],
+    [check, dismissed, downloadAndInstall, error, forceUpdate, markLaunchSucceeded, native, progress, report, run, setStatus, status],
   );
 
   return value;

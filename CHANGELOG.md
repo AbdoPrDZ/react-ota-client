@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-10-05
+
+### Added
+
+- **Activity reporting.** The engine can now tell the server what it did, so a
+  center can keep a per-device / per-app audit trail. `OtaClient.reportEvent()`
+  posts to `POST {apiRoot}/app/event` (form-encoded, authorised with the same
+  `API-KEY` and `X-Device-Info`), and `OTAProvider` / `useOTAFlow` report the
+  user-driven events automatically: `update.available` after a check that finds
+  something, `update.refused` when the user dismisses the prompt, and
+  `update.downloaded` / `update.failed` around a download. Set
+  `reportEvents={false}` to opt out; every report is fire-and-forget and never
+  fails the update flow.
+- **Rollback and launch events from native.** Because they happen before
+  JavaScript runs, the engine reports `update.rollback` (a provisional bundle
+  reverted at startup) and `bundle.launch_confirmed` (the active bundle booted)
+  itself.
+
 ## [1.3.1] - 2026-10-05
 
 ### Fixed
