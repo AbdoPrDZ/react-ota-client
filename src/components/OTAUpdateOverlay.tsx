@@ -26,6 +26,10 @@ export interface OTAUpdateOverlayCopy {
   restartingLabel: string;
   retryLabel: string;
   unknownSizeLabel: string;
+  /** Shown instead of `updateTitle` when the server forces the update. */
+  requiredTitle: string;
+  /** Prepended to the body when the server forces the update. */
+  requiredMessage: string;
 }
 
 export interface OTAUpdateOverlayProps {
@@ -69,6 +73,8 @@ const defaultCopy: OTAUpdateOverlayCopy = {
   restartingLabel: 'Installing update',
   retryLabel: 'Retry',
   unknownSizeLabel: 'Downloading update',
+  requiredTitle: 'Update required',
+  requiredMessage: 'This update is required. Install it to continue.',
 };
 
 /**
@@ -92,7 +98,7 @@ export function OTAUpdateOverlay({
   progressFillStyle,
   testID = 'ota-update-overlay',
 }: OTAUpdateOverlayProps) {
-  const { status, check, progress, error, dismissed, downloadAndInstall, openAppUpdate, dismissUpdate, retry } =
+  const { status, check, progress, error, dismissed, forceUpdate, downloadAndInstall, openAppUpdate, dismissUpdate, retry } =
     useOtaContext();
 
   const texts = useMemo(() => ({ ...defaultCopy, ...copy }), [copy]);
@@ -109,10 +115,12 @@ export function OTAUpdateOverlay({
   const failed = status === 'failed' && error;
   const bundleUpdate = check?.haveBundleUpdate ?? false;
   const versionUpdate = showAppVersionUpdate && (check?.haveVersionUpdate ?? false);
+  // A forced update removes every escape hatch the overlay owns.
+  const canLater = allowLater && !forceUpdate;
 
   if (render) {
     return (
-      <Modal transparent animationType="fade" visible statusBarTranslucent onRequestClose={dismissUpdate}>
+      <Modal transparent animationType="fade" visible statusBarTranslucent onRequestClose={canLater ? dismissUpdate : () => {}}>
         <View style={[styles.overlay, overlayStyle]}>
           {render({
             status,
@@ -141,7 +149,9 @@ export function OTAUpdateOverlay({
     ? 'Update failed'
     : installing
       ? texts.restartingLabel
-      : texts.updateTitle;
+      : forceUpdate
+        ? texts.requiredTitle
+        : texts.updateTitle;
 
   const body = failed
     ? error.message
@@ -149,7 +159,11 @@ export function OTAUpdateOverlay({
       ? progressPercent == null
         ? texts.unknownSizeLabel
         : `${texts.downloadingLabel}… ${progressPercent}%`
-      : [versionUpdate ? texts.appUpdateMessage : null, bundleUpdate ? texts.updateMessage : null]
+      : [
+          forceUpdate ? texts.requiredMessage : null,
+          versionUpdate ? texts.appUpdateMessage : null,
+          bundleUpdate ? texts.updateMessage : null,
+        ]
           .filter(Boolean)
           .join('\n\n');
 
@@ -159,7 +173,7 @@ export function OTAUpdateOverlay({
       animationType="fade"
       visible
       statusBarTranslucent
-      onRequestClose={allowLater ? dismissUpdate : () => {}}
+      onRequestClose={canLater ? dismissUpdate : () => {}}
     >
       <View style={[styles.overlay, overlayStyle]} testID={testID}>
         <View style={[styles.card, cardStyle]}>
@@ -236,7 +250,7 @@ export function OTAUpdateOverlay({
                 </Pressable>
               ) : null}
 
-              {allowLater ? (
+              {canLater ? (
                 <Pressable
                   accessibilityRole="button"
                   onPress={dismissUpdate}

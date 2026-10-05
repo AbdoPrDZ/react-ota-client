@@ -196,6 +196,16 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
   const configKey = useMemo(() => JSON.stringify(options.config ?? null), [options.config]);
 
+  /** The server marked the pending version and/or bundle update as required. */
+  const forceUpdate = useMemo(() => {
+    const updates = check?.appInfo?.availableUpdates;
+
+    return (
+      updates?.version?.updateType === 'force' ||
+      updates?.bundle?.updateType === 'force'
+    );
+  }, [check]);
+
   useEffect(() => {
     run();
     // Re-running is only intentional when the JS-side config changes.
@@ -246,6 +256,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
       error,
       supported: OtaClient.isSupported(),
       dismissed,
+      forceUpdate,
 
       configure: async (next) => {
         const saved = await OtaClient.configure(next);
@@ -268,7 +279,14 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
       downloadAndInstall,
       install: (directory) => OtaClient.installBundle({ directory: directory ?? null }),
-      dismissUpdate: () => setDismissed(true),
+      // A forced update cannot be dismissed for the rest of the session.
+      dismissUpdate: () => {
+        if (forceUpdate) {
+          return;
+        }
+
+        setDismissed(true);
+      },
 
       revertToEmbedded: async () => {
         await OtaClient.revertToEmbeddedBundle();
@@ -279,7 +297,10 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
       openAppUpdate: async () => {
         await OtaClient.openAppUpdate();
-        setDismissed(true);
+
+        if (!forceUpdate) {
+          setDismissed(true);
+        }
       },
 
       confirmLaunch: markLaunchSucceeded,
@@ -287,7 +308,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
         void run();
       },
     }),
-    [check, dismissed, downloadAndInstall, error, markLaunchSucceeded, native, progress, run, status],
+    [check, dismissed, downloadAndInstall, error, forceUpdate, markLaunchSucceeded, native, progress, run, setStatus, status],
   );
 
   return value;

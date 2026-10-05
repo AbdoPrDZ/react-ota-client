@@ -11,6 +11,8 @@ data class APIResponse<T>(
 data class UpdateInfo(
   val id: String,
   val name: String,
+  /** `"optional"` or `"force"`: whether the client must install this update. */
+  val updateType: String = "optional",
 )
 
 /** The two kinds of update the engine understands. */

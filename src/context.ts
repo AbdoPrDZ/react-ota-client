@@ -48,6 +48,12 @@ export interface OtaContextValue extends OtaActions {
   supported: boolean;
   /** `true` once the user chose to skip the pending update for this session. */
   dismissed: boolean;
+  /**
+   * `true` when the pending update is `force`: the built-in overlay hides its
+   * escape hatch and `dismissUpdate()` becomes a no-op. Custom UIs should honour
+   * this too (block navigation / hide their own skip).
+   */
+  forceUpdate: boolean;
 }
 
 export const OtaContext = createContext<OtaContextValue | null>(null);

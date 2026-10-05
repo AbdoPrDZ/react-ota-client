@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-05
+
+### Added
+
+- **Forced updates.** The update check now carries the server's `updateType`
+  (`optional` or `force`) on each offered update (`UpdateInfo.updateType` in
+  Kotlin, `OtaUpdateInfo.updateType` / `OtaUpdateType` in TS). When a pending
+  version or bundle update is `force`, the built-in overlay hides "Not now",
+  blocks the back gesture and `dismissUpdate()` becomes a no-op for the session;
+  `forceUpdate` is exposed on the context so a custom UI can comply too. Servers
+  that omit the field are treated as `optional`, so the change is backward
+  compatible both ways.
+
 ## [1.2.0] - 2026-10-05
 
 ### Added

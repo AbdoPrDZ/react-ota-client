@@ -69,7 +69,16 @@ export interface OtaAppInfo {
 export interface OtaUpdateInfo {
   id: string;
   name: string;
+  /**
+   * `force` when the server requires this update — the client must install it
+   * and may not offer a "not now". Defaults to `optional` when the server (or an
+   * older server) omits the field.
+   */
+  updateType?: OtaUpdateType;
 }
+
+/** How insistently the server wants an update installed. */
+export type OtaUpdateType = 'optional' | 'force';
 
 export interface OtaAvailableUpdates {
   /** A new APK is available. */

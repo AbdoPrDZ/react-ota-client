@@ -456,15 +456,16 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
       putString("bundleId", info.bundleId)
       putString("session", info.session)
       putMap("availableUpdates", Arguments.createMap().apply {
-        putMap("version", info.availableUpdates.version?.let { updateMap(it.id, it.name) })
-        putMap("bundle", info.availableUpdates.bundle?.let { updateMap(it.id, it.name) })
+        putMap("version", info.availableUpdates.version?.let { updateMap(it) })
+        putMap("bundle", info.availableUpdates.bundle?.let { updateMap(it) })
       })
     } })
   }
 
-  private fun updateMap(id: String, name: String): WritableMap = Arguments.createMap().apply {
-    putString("id", id)
-    putString("name", name)
+  private fun updateMap(info: UpdateInfo): WritableMap = Arguments.createMap().apply {
+    putString("id", info.id)
+    putString("name", info.name)
+    putString("updateType", info.updateType)
   }
 
   private fun configString(map: ReadableMap, key: String): String? {

@@ -374,6 +374,12 @@ function DebugBadge() {
 | `showUpdateOverlay` | `true` | Render the built-in blocking update UI. |
 | `renderChildrenWhenUnsupported` | `true` | On iOS, render children instead of the boot screen. |
 
+A server can mark a version or a bundle update as **required** by returning
+`updateType: "force"` for it. While a forced update is pending, the built-in
+overlay hides "Not now", ignores the back gesture and refuses to close, and the
+context exposes `forceUpdate: true` so a custom UI can enforce the same. Updates
+are optional (and dismissible) by default.
+
 To build your own update screen, take the state and render what you like:
 
 ```tsx
