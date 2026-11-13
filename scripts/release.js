@@ -90,7 +90,7 @@ function main() {
   if (match && match[1] !== version) {
     fail(`LIBRARY_VERSION in android/build.gradle is ${match[1]}, package.json is ${version}`);
   }
-  process.stdout.write(`package.json, CHANGELOG${match ? ' and LIBRARY_VERSION' : ''} agree on ${version}\n`);
+  process.stdout.write(`${match ? 'package.json, CHANGELOG and LIBRARY_VERSION' : 'package.json and CHANGELOG'} agree on ${version}\n`);
 
   step('Checking accounts');
   const npmUser = run('npm', ['whoami'], { capture: true, allowFail: true });
