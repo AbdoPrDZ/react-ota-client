@@ -22,21 +22,24 @@
 ## Testing the engine in a host app
 
 The Kotlin code compiles only inside an app. OTAStore (`E:\OTA\OTAStore`)
-depends on this package from GitHub; to compile a local checkout without
-changing OTAStore, use a Gradle init script that substitutes the `:ota-client`
-project with this repo's `android/` directory. A JS-level change needs a Metro
+depends on this package from GitHub (still as `ota-client` at tag `v1.4.0`);
+to compile a local checkout without changing OTAStore, use a Gradle init
+script that points its autolinked project (`:ota-client` there,
+`:react-ota-client` from 1.5.0) at this repo's `android/` directory. A JS-level change needs a Metro
 bundle of a host app against `dist/`.
 
 ## CLI (in a host app)
 
-- `ota-client android`: bundle the JS into `android/app/src/main/{assets,res}`
+Command `react-ota-client`; `ota-client` is kept as an alias for 1.4.x scripts.
+
+- `react-ota-client android`: bundle the JS into `android/app/src/main/{assets,res}`
   for the base APK.
-- `ota-client release`: build the OTA archive (bundle + `manifest.json`, plus
+- `react-ota-client release`: build the OTA archive (bundle + `manifest.json`, plus
   `fonts/` and `assets/` when present) into `release/`. Fails when
   `runtimeVersion` ≠ APK `versionName` unless `--force`.
-- `ota-client apk`: rebuild the embedded bundle, `gradlew assembleRelease`, copy
+- `react-ota-client apk`: rebuild the embedded bundle, `gradlew assembleRelease`, copy
   the APK to `release/`.
-- `ota-client doctor`: check the host wiring.
+- `react-ota-client doctor`: check the host wiring.
 - `.env` is loaded (`dotenv`); env overrides such as `BUILD_BUNDLE_NAME`,
   `RELEASE_DIR`.
 

@@ -190,7 +190,7 @@ export const OtaClient = {
     const native = requireNative();
 
     if (!native.downloadAndInstallAppUpdate) {
-      throw new Error('This build of the ota-client engine cannot install app updates in-app; rebuild the app.');
+      throw new Error('This build of the react-ota-client engine cannot install app updates in-app; rebuild the app.');
     }
 
     return unwrap(native.downloadAndInstallAppUpdate());
@@ -278,7 +278,7 @@ export const OtaClient = {
     const emitter = getEmitter();
     const subscription = emitter?.addListener(OTA_EVENTS.error, (payload: unknown) => {
       const event = payload as { message?: string } | undefined;
-      listener(new Error(event?.message ?? 'Unknown ota-client error'));
+      listener(new Error(event?.message ?? 'Unknown react-ota-client error'));
     });
 
     return () => subscription?.remove();

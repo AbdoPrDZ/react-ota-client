@@ -24,7 +24,7 @@ const {
  * Builds the archive the OTA server serves: the JS bundle plus its
  * `manifest.json`, both at the root of a `.tar.gz`.
  *
- *   ota-client release
+ *   react-ota-client release
  *
  * The engine downloads this file, verifies the manifest and the MD5, and stages
  * the bundle. Upload the result to whatever `app/update/bundle/{id}` returns.

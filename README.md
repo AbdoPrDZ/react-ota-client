@@ -1,8 +1,8 @@
-# ota-client
+# react-ota-client
 
 Over-the-air JavaScript bundle updates for React Native on **Android**.
 
-A device ships one JS bundle inside the APK. `ota-client` lets that bundle be
+A device ships one JS bundle inside the APK. `react-ota-client` lets that bundle be
 replaced at runtime: the app asks your server whether a newer bundle exists,
 downloads it, verifies it, swaps it in and restarts into it — no app store
 release, no new APK.
@@ -30,9 +30,9 @@ release, no new APK.
 ## Install
 
 ```sh
-npm install ota-client
+npm install react-ota-client
 # or
-yarn add ota-client
+yarn add react-ota-client
 ```
 
 From GitHub, before the package is on the registry:
@@ -41,19 +41,19 @@ From GitHub, before the package is on the registry:
 npm install github:AbdoPrDZ/react-ota-client
 ```
 
-Note that the repository is named `react-ota-client` while the npm package is
-named `ota-client` — they are not the same identifier, so the GitHub spec above
-is not a drop-in for `ota-client`. Pin a tag or a commit rather than a branch
-in anything you deploy:
+Pin a tag or a commit rather than a branch in anything you deploy:
 
 ```sh
-npm install github:AbdoPrDZ/react-ota-client#v1.0.0
+npm install github:AbdoPrDZ/react-ota-client#v1.5.0
 ```
+
+The package was named `ota-client` up to 1.4.x. When upgrading, change the
+dependency name and every `from 'react-ota-client'` import to `react-ota-client`.
 
 The Android module is picked up by autolinking. Confirm it:
 
 ```sh
-npx react-native config | grep ota-client
+npx react-native config | grep react-ota-client
 ```
 
 ### Migrating from the in-app engine
@@ -118,7 +118,7 @@ Returning `null` (the default when no OTA bundle is active, in debug builds, or
 after a rollback) hands control back to React Native, which serves the bundle
 inside the APK or connects to Metro.
 
-`ota-client doctor` verifies this wiring for you.
+`react-ota-client doctor` verifies this wiring for you.
 
 ### 3. Tell it where your server is
 
@@ -139,7 +139,7 @@ Either commit the coordinates as Android manifest meta-data:
 builds and per-user configuration):
 
 ```tsx
-import { OtaClient } from 'ota-client';
+import { OtaClient } from 'react-ota-client';
 
 await OtaClient.configure({
   apiBaseUrl: 'https://updates.example.com',
@@ -151,7 +151,7 @@ await OtaClient.configure({
 ### 4. Wrap your app root
 
 ```tsx
-import { OTAProvider } from 'ota-client';
+import { OTAProvider } from 'react-ota-client';
 
 export default function App() {
   return (
@@ -173,7 +173,7 @@ the server is unreachable, so your app still works offline.
 ### 5. Publish an update
 
 ```sh
-npx ota-client release
+npx react-ota-client release
 ```
 
 Upload `release/my-app-1.0.0-1.0.1.tar.gz` to your server, publish it as the
@@ -252,7 +252,7 @@ them by path. The engine stages that directory next to the bundle, and
 `OTAImage` builds a `file://` URI from the active bundle directory:
 
 ```tsx
-import { OTAImage } from 'ota-client';
+import { OTAImage } from 'react-ota-client';
 import Logo from '@/assets/Logo.png';
 
 <OTAImage name="Logo.png" source={Logo} style={styles.logo} resizeMode="contain" />;
@@ -313,7 +313,7 @@ shows an indeterminate one.
 ### Imperative
 
 ```ts
-import OtaClient from 'ota-client';
+import OtaClient from 'react-ota-client';
 
 OtaClient.isSupported(): boolean
 
@@ -378,7 +378,7 @@ header. Needs a server that accepts the key from the query (OTACenter 1.5.2+).
 ### Hooks
 
 ```tsx
-import { useOTA, useOTABundleInfo } from 'ota-client';
+import { useOTA, useOTABundleInfo } from 'react-ota-client';
 
 function DebugBadge() {
   const { status, check, progress, downloadAndInstall, dismissUpdate } = useOTA();
@@ -460,7 +460,7 @@ native-first flow below, or the bundle is checked twice.
 ### Server setup at runtime
 
 ```tsx
-import { OTAConfigureScreen, OtaClient } from 'ota-client';
+import { OTAConfigureScreen, OtaClient } from 'react-ota-client';
 
 // Full-screen form
 <OTAConfigureScreen onConfigured={config => console.log(config)} />;
@@ -474,11 +474,14 @@ await OtaClient.configure({ apiBaseUrl: 'https://staging.example.com' });
 ## CLI
 
 ```
-ota-client android    bundle the JS into android/app/src/main/{assets,res} for the base APK
-ota-client release    build the OTA archive (bundle + manifest.json) into release/
-ota-client apk        run gradlew assembleRelease and copy the APK into release/
-ota-client doctor     verify the host project is ready to receive OTA updates
+react-ota-client android    bundle the JS into android/app/src/main/{assets,res} for the base APK
+react-ota-client release    build the OTA archive (bundle + manifest.json) into release/
+react-ota-client apk        run gradlew assembleRelease and copy the APK into release/
+react-ota-client doctor     verify the host project is ready to receive OTA updates
 ```
+
+`ota-client` is kept as an alias of the command, so scripts written for 1.4.x
+keep working.
 
 | Flag | Commands | Meaning |
 | --- | --- | --- |
@@ -501,13 +504,13 @@ Environment overrides: `BUILD_BUNDLE_NAME`, `BUILD_TMP_DIR`, `RELEASE_DIR`,
 ```sh
 # 1. JS changed, native did not.
 npm version patch                 # bumps `version` only
-npx ota-client release            # release/my-app-1.0.0-1.0.1.tar.gz
+npx react-ota-client release            # release/my-app-1.0.0-1.0.1.tar.gz
                                    # upload it, publish it as the current bundle
 
 # 2. Native changed too: bump runtimeVersion, then ship a new APK.
 #    package.json runtimeVersion and build.gradle versionName must match.
 npm version minor
-npx ota-client apk                # rebuilds the embedded bundle, then assembles
+npx react-ota-client apk                # rebuilds the embedded bundle, then assembles
 ```
 
 `release` fails when `runtimeVersion` and the APK `versionName` disagree, because
@@ -606,9 +609,9 @@ override fun getPackages() = PackageList(this).packages.apply {
 
 **`E_OTA_LINKING`** — the native module is missing. Rebuild the Android app
 (`npx react-native run-android`); Metro reloads do not pick up native changes.
-Check `npx react-native config` lists `ota-client`.
+Check `npx react-native config` lists `react-ota-client`.
 
-**Update never appears** — run `npx ota-client doctor`. The usual causes are a
+**Update never appears** — run `npx react-ota-client doctor`. The usual causes are a
 `runtimeVersion` that does not match the APK `versionName`, an update published
 for a different `package` name, or the server not reporting it in
 `availableUpdates.bundle`.
@@ -640,9 +643,9 @@ visibility from `status`, so a manual check must set it. Calling the imperative
 `OtaClient.checkUpdate()` returns the result but does not touch the provider's
 state; use `checkForUpdates()` from `useOTA()` when you want the UI to react.
 
-**Plain JS in a test environment** — the package ships TypeScript source, which
-Metro compiles. Jest needs the RN preset to transform it; if your `transformIgnorePatterns`
-is customised, make sure `ota-client` is not ignored.
+**Jest** — the package ships compiled CommonJS (`dist/index.js`), so it needs no
+transform of its own, but it imports `react-native`: use the `react-native` Jest
+preset.
 
 ## License
 

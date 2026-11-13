@@ -1,5 +1,5 @@
 /**
- * ota-client — over-the-air JavaScript bundle updates for React Native (Android).
+ * react-ota-client — over-the-air JavaScript bundle updates for React Native (Android).
  *
  * Three ways in, from most to least automatic:
  *

@@ -1,6 +1,6 @@
 # Architecture
 
-`ota-client` (npm name; the repo is `react-ota-client`) gives **bare React
+`react-ota-client` (npm name and repo; it was `ota-client` up to 1.4.x) gives **bare React
 Native apps on Android** over-the-air JS bundle updates from **OTACenter**, the
 team's own update server (Laravel, `E:\OTA\OTACenter`). Unlike its Expo sibling
 `expo-ota-client`, it brings its **own native engine**. The two must never be in
@@ -13,7 +13,7 @@ the same app. iOS is unsupported: every API rejects with
 | --- | --- | --- | --- |
 | Kotlin engine | `android/` (`com.otaclient`), autolinked via `react-native.config.js` | Source, compiled by the host app | The app |
 | JS API and components | `src/` (TypeScript, React) | `dist/index.js` (minified) + `dist/types/` | The app |
-| CLI | `cli/index.js`, `cli/lib/` | `dist/cli/index.js` (bin `ota-client`) | Developer machine (Node 18+) |
+| CLI | `cli/index.js`, `cli/lib/` | `dist/cli/index.js` (bin `react-ota-client`, alias `ota-client`) | Developer machine (Node 18+) |
 
 ## Kotlin engine (`android/src/main/java/com/otaclient/`)
 

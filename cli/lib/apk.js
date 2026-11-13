@@ -10,7 +10,7 @@ const { CliError, defaultReleaseDir, log, readProjectVersions, resolveProjectRoo
 /**
  * Builds the release APK and copies it into `release/`.
  *
- *   ota-client apk
+ *   react-ota-client apk
  *
  * The embedded bundle is rebuilt first, so the APK always ships the JS it was
  * tested with. Release builds must be signed with your own keystore — see

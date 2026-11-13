@@ -22,7 +22,7 @@ const {
  * The result is what a device falls back to when there is no OTA bundle, so it
  * must be produced before every release APK:
  *
- *   ota-client android
+ *   react-ota-client android
  */
 async function runAndroid(options = {}) {
   const root = resolveProjectRoot(options.projectRoot);

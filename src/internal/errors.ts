@@ -1,7 +1,7 @@
 const LINKING_ERROR =
-  "The native module of 'ota-client' is not available.\n" +
+  "The native module of 'react-ota-client' is not available.\n" +
   '- Rebuild the Android app after installing the package (`npx react-native run-android`).\n' +
-  '- Make sure autolinking picked it up: `npx react-native config` should list `ota-client`.\n' +
+  '- Make sure autolinking picked it up: `npx react-native config` should list `react-ota-client`.\n' +
   '- If you use a custom `react-native.config.js`, add the package to `packageImportPath` manually.';
 
 /** Thrown when a JS-only platform (iOS, web) calls into the Android engine. */
@@ -10,7 +10,7 @@ export class OtaUnsupportedPlatformError extends Error {
 
   constructor(platform: string) {
     super(
-      `ota-client only supports Android; cannot run on "${platform}". ` +
+      `react-ota-client only supports Android; cannot run on "${platform}". ` +
         'The update engine is implemented in Kotlin and has no iOS implementation.',
     );
     this.name = 'OtaUnsupportedPlatformError';
@@ -33,7 +33,7 @@ export class OtaNotConfiguredError extends Error {
 
   constructor() {
     super(
-      'ota-client is not configured: no API base URL. Pass one to `configure()` or add ' +
+      'react-ota-client is not configured: no API base URL. Pass one to `configure()` or add ' +
         '`<meta-data android:name="ota_client_api_base_url" .../>` to the host AndroidManifest.xml.',
     );
     this.name = 'OtaNotConfiguredError';

@@ -19,7 +19,7 @@ const {
 /**
  * Checks that a host project can actually receive OTA updates.
  *
- *   ota-client doctor
+ *   react-ota-client doctor
  *
  * Every check maps to a way the engine fails silently in production, so this is
  * the command to run when an update "does nothing" on a device.
@@ -28,7 +28,7 @@ async function runDoctor(options = {}) {
   const root = resolveProjectRoot(options.projectRoot);
   const problems = [];
 
-  log(`\nota-client doctor — ${root}\n`);
+  log(`\nreact-ota-client doctor — ${root}\n`);
 
   // 1. Versions -------------------------------------------------------------
   let versions = null;
@@ -66,7 +66,7 @@ async function runDoctor(options = {}) {
   const manifestPath = path.join(defaultAssetsDir(root), MANIFEST_FILE);
 
   if (!fs.existsSync(manifestPath)) {
-    const message = `No ${manifestPath}. Run \`npx ota-client android\` before building the APK.`;
+    const message = `No ${manifestPath}. Run \`npx react-ota-client android\` before building the APK.`;
     fail(message);
     problems.push(message);
   } else {
@@ -80,7 +80,7 @@ async function runDoctor(options = {}) {
       const message =
         `${manifestPath} describes v${manifest.version} (runtime ${manifest.runtimeVersion}) but ` +
         `package.json is v${versions.version} (runtime ${versions.runtimeVersion}). ` +
-        'Re-run `npx ota-client android`.';
+        'Re-run `npx react-ota-client android`.';
 
       fail(message);
       problems.push(message);
@@ -120,7 +120,7 @@ async function runDoctor(options = {}) {
   log('');
 
   if (problems.length === 0) {
-    log('All checks passed. Publish an update with: npx ota-client release');
+    log('All checks passed. Publish an update with: npx react-ota-client release');
   } else {
     log(`${problems.length} problem(s) found. Fix them before publishing an update.`);
   }

@@ -1,6 +1,6 @@
 # Project Context
 
-AI-readable memory for `ota-client` (repo `react-ota-client`): the smallest set
+AI-readable memory for `react-ota-client`: the smallest set
 of facts an agent needs before changing this repo. It is derived knowledge; when
 it disagrees with the code, trust the code and fix the context.
 

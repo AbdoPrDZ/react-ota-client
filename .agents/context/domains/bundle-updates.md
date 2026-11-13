@@ -4,7 +4,7 @@ Replacing the JS bundle without a new APK. The engine's main job.
 
 ## Archive
 
-`{name}-{runtimeVersion}-{version}.tar.gz` built by `ota-client release`:
+`{name}-{runtimeVersion}-{version}.tar.gz` built by `react-ota-client release`:
 the bundle, `manifest.json` (`version`, `runtimeVersion`, `bundle`, size, MD5,
 optional `fonts` list), and optionally `fonts/` and `assets/`.
 

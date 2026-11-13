@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- **Renamed the package from `ota-client` to `react-ota-client`**, the same
+  name as the repository. Update the dependency name and every
+  `from 'ota-client'` import. The CLI command is now `react-ota-client`;
+  `ota-client` stays as an alias. Autolinking now names the Gradle project
+  `:react-ota-client`. The native code is unchanged (`com.otaclient`).
 - **New app versions install inside the app, not through the browser.**
   `openAppUpdate()` from the provider (and the overlay's "Download new version"
   button) now downloads the APK in-process with a progress bar and a Cancel
@@ -22,7 +27,7 @@ All notable changes to this project are documented here. The format follows
   without the new native code.
 - **The package ships built JavaScript instead of TypeScript sources.**
   `main` is now `dist/index.js`, one minified CommonJS bundle built with
-  esbuild; `types` is `dist/types/index.d.ts`, and the `ota-client` bin is the
+  esbuild; `types` is `dist/types/index.d.ts`, and the CLI bin is the
   minified `dist/cli/index.js`. The `react-native` and `source` fields are gone,
   so Metro and TypeScript read only `dist/`. The Kotlin engine still ships as
   source, since the host app compiles it.

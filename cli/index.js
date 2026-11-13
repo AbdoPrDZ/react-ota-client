@@ -2,14 +2,14 @@
 'use strict';
 
 /**
- * ota-client CLI.
+ * react-ota-client CLI (also installed as `ota-client`, its name up to 1.4.x).
  *
  * Runs against the *host* React Native project (your app), not this package:
  *
- *   ota-client doctor     check the host is wired up correctly
- *   ota-client android    build the bundle embedded in the APK
- *   ota-client release    build the OTA archive to upload to the server
- *   ota-client apk        build the release APK
+ *   react-ota-client doctor     check the host is wired up correctly
+ *   react-ota-client android    build the bundle embedded in the APK
+ *   react-ota-client release    build the OTA archive to upload to the server
+ *   react-ota-client apk        build the release APK
  */
 
 require('dotenv').config({ quiet: true });
@@ -23,8 +23,8 @@ const { runDoctor } = require('./lib/doctor');
 const { runRelease } = require('./lib/release');
 
 program
-  .name('ota-client')
-  .description('Build tooling for ota-client over-the-air bundle updates')
+  .name('react-ota-client')
+  .description('Build tooling for react-ota-client over-the-air bundle updates')
   .version(pkg.version);
 
 program
