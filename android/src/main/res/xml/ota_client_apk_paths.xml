@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where ApkInstaller stores downloaded APKs (external app files, or internal as a fallback). -->
+<paths>
+    <external-files-path name="ota_client_apk" path="ota-apk/" />
+    <files-path name="ota_client_apk_internal" path="ota-apk/" />
+</paths>

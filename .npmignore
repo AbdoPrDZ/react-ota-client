@@ -1,0 +1,54 @@
+# What npm must not publish. What ships: dist/ (minified JS + .d.ts), android/
+# (Kotlin engine, compiled by the host app), react-native.config.js, README.md,
+# CHANGELOG.md, LICENSE.
+
+# Readable sources: dist/ is built from them by `npm run build` (prepublishOnly).
+# Anchored with a leading slash: a bare `src/` would also drop android/src/.
+/src/
+/cli/
+/scripts/
+/tsconfig.json
+/tsconfig.build.json
+
+# Dependencies and lockfiles
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock*
+
+# Tests
+**/__tests__/
+**/__fixtures__/
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+
+# Android build output and local config
+android/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+.gradle/
+*.iml
+*.hprof
+*.tgz
+
+# Repo / dev tooling
+.git/
+.github/
+.gitignore
+.npmignore
+.eslintrc.js
+.prettierrc.js
+.idea/
+.vscode/
+.agents/
+.claude/
+
+# Misc
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

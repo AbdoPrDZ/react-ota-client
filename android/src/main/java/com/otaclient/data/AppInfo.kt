@@ -13,6 +13,8 @@ data class UpdateInfo(
   val name: String,
   /** `"optional"` or `"force"`: whether the client must install this update. */
   val updateType: String = "optional",
+  /** Hex SHA-256 of the artifact, when the server knows it; verified after an APK download. */
+  val checksum: String? = null,
 )
 
 /** The two kinds of update the engine understands. */

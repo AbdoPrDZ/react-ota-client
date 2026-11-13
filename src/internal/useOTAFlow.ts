@@ -11,7 +11,7 @@ import type {
   OtaState,
   OtaStatus,
 } from '../types';
-import { toError } from './errors';
+import { errorCode, OTA_APK_ERRORS, toError } from './errors';
 
 export interface UseOTAFlowOptions {
   /** Applied once on every (re)run. Pass `null` to keep the native/manifest config. */
@@ -57,6 +57,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
   const [progress, setProgress] = useState<OtaDownloadProgress | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [downloadKind, setDownloadKind] = useState<'bundle' | 'app' | null>(null);
 
   const mountedRef = useRef(true);
   const runIdRef = useRef(0);
@@ -239,6 +240,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
     setError(null);
     setDismissed(false);
+    setDownloadKind('bundle');
     setStatus('downloading', null);
 
     const unsubscribe = OtaClient.addDownloadProgressListener((event) => {
@@ -271,6 +273,71 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
     }
   }, [report, setStatus]);
 
+  /**
+   * New app version: download the APK in-app and open the system installer.
+   * Only an engine without in-app support falls back to the browser.
+   */
+  const installAppUpdate = useCallback(async () => {
+    const opts = optionsRef.current;
+    const versionName = check?.appInfo?.availableUpdates.version?.name ?? null;
+
+    if (!OtaClient.supportsInAppAppUpdate()) {
+      await OtaClient.openAppUpdate();
+      return;
+    }
+
+    setError(null);
+
+    if (!(await OtaClient.canInstallAppUpdate())) {
+      await OtaClient.openInstallSettings();
+
+      const failure = new Error('Allow this app to install updates, then tap the button again.');
+      (failure as Error & { code?: string }).code = OTA_APK_ERRORS.installPermission;
+
+      if (mountedRef.current) {
+        setError(failure);
+      }
+      return;
+    }
+
+    setDownloadKind('app');
+    setProgress(null);
+    setStatus('downloading', null);
+
+    const unsubscribe = OtaClient.addAppUpdateProgressListener((event) => {
+      if (mountedRef.current) {
+        setProgress(event);
+      }
+    });
+
+    try {
+      await OtaClient.downloadAndInstallAppUpdate();
+      report('update.downloaded', { version: versionName });
+      // The installer now covers the app; if the user backs out, offer it again.
+      setStatus('update-available', null);
+    } catch (caught) {
+      const failure = toError(caught);
+      const cancelled = errorCode(caught) === OTA_APK_ERRORS.cancelled;
+
+      if (mountedRef.current && !cancelled) {
+        setError(failure);
+      }
+
+      if (!cancelled) {
+        report('update.failed', { version: versionName, message: failure.message });
+        opts.onError?.(failure);
+      }
+
+      setStatus('update-available', null);
+    } finally {
+      unsubscribe();
+      if (mountedRef.current) {
+        setDownloadKind(null);
+        setProgress(null);
+      }
+    }
+  }, [check, report, setStatus]);
+
   const value = useMemo<OtaContextValue>(
     () => ({
       status,
@@ -281,6 +348,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
       supported: OtaClient.isSupported(),
       dismissed,
       forceUpdate,
+      downloadKind,
 
       configure: async (next) => {
         const saved = await OtaClient.configure(next);
@@ -324,12 +392,10 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
 
       restart: () => OtaClient.restartApp(),
 
-      openAppUpdate: async () => {
-        await OtaClient.openAppUpdate();
+      openAppUpdate: installAppUpdate,
 
-        if (!forceUpdate) {
-          setDismissed(true);
-        }
+      cancelAppUpdate: async () => {
+        await OtaClient.cancelAppUpdateDownload();
       },
 
       confirmLaunch: markLaunchSucceeded,
@@ -337,7 +403,7 @@ export function useOTAFlow(options: UseOTAFlowOptions = {}): OtaContextValue {
         void run();
       },
     }),
-    [check, dismissed, downloadAndInstall, error, forceUpdate, markLaunchSucceeded, native, progress, report, run, setStatus, status],
+    [check, dismissed, downloadAndInstall, downloadKind, error, forceUpdate, installAppUpdate, markLaunchSucceeded, native, progress, report, run, setStatus, status],
   );
 
   return value;

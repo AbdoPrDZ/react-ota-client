@@ -75,6 +75,10 @@ export interface OtaUpdateInfo {
    * older server) omits the field.
    */
   updateType?: OtaUpdateType;
+  /** Hex SHA-256 of the artifact; the engine verifies a downloaded APK against it. */
+  checksum?: string | null;
+  /** `true` for a demo release (offered to demo testers only). */
+  demo?: boolean;
 }
 
 /** How insistently the server wants an update installed. */

@@ -17,6 +17,7 @@ import com.otaclient.data.CheckUpdate
 import com.otaclient.data.DownloadBundle
 import com.otaclient.data.Manifest
 import com.otaclient.data.UpdateInfo
+import com.otaclient.ota.ApkInstaller
 import com.otaclient.ota.OtaBundleProvider
 import com.otaclient.ota.OtaConfig
 import com.otaclient.ota.OtaHost
@@ -26,6 +27,8 @@ import com.otaclient.utils.AppStorage
 import com.otaclient.utils.OTAClient
 import com.otaclient.utils.OtaException
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +56,9 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
     /** `{ code, message }` for failures with no owning promise. */
     const val EVENT_ERROR = "otaClient:error"
 
+    /** `{ downloaded, total, percent }` while a new APK is downloading in-app. */
+    const val EVENT_APK_PROGRESS = "otaClient:apkProgress"
+
     private const val TAG = "OtaClient"
     private const val RESTART_DELAY_MS = 350L
     private const val PROGRESS_STEP_BYTES = 64L * 1024L
@@ -60,6 +66,9 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val mainHandler = Handler(Looper.getMainLooper())
+
+  /** Cancel flag of the running APK download; `null` when none runs. */
+  private val apkCancel = AtomicReference<AtomicBoolean?>(null)
 
   /** Bundle staged by the last successful `downloadBundle()`, awaiting activation. */
   @Volatile
@@ -188,6 +197,86 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
       .onFailure { promise.reject(E_NO_VERSION_UPDATE, it.message, it) }
   }
 
+  /** Whether the app may open the package installer ("install unknown apps"). */
+  @ReactMethod
+  fun canInstallAppUpdate(promise: Promise) {
+    promise.resolve(ApkInstaller.canInstall(appContext))
+  }
+
+  /** Opens the system "install unknown apps" toggle for this app. */
+  @ReactMethod
+  fun openInstallSettings(promise: Promise) {
+    promise.resolve(ApkInstaller.openInstallSettings(appContext))
+  }
+
+  /**
+   * Downloads the new APK reported by the last `checkUpdate()` inside the app
+   * (progress on [EVENT_APK_PROGRESS]), verifies it against the server's
+   * SHA-256, and opens the system installer. Resolves once the installer is
+   * shown; installing replaces the app process.
+   */
+  @ReactMethod
+  fun downloadAndInstallAppUpdate(promise: Promise) {
+    if (!ApkInstaller.canInstall(appContext)) {
+      promise.reject(ApkInstaller.E_INSTALL_PERMISSION, "The app is not allowed to install packages yet.")
+      return
+    }
+
+    val engine = engine()
+    val update = engine.pendingVersionUpdate()
+    val url = runCatching { engine.appUpdateUrl() }.getOrNull()
+
+    if (update == null || url == null) {
+      promise.reject(E_NO_VERSION_UPDATE, "No app version update to install")
+      return
+    }
+
+    val cancelled = AtomicBoolean(false)
+    if (!apkCancel.compareAndSet(null, cancelled)) {
+      promise.reject(E_APK_BUSY, "An app update is already downloading")
+      return
+    }
+
+    scope.launch {
+      try {
+        val file = ApkInstaller.download(
+          context = appContext,
+          url = url,
+          fileName = "${OtaHost.packageName(appContext)}-${update.name}.apk",
+          headers = mapOf("API-KEY" to serverConfig().apiKey),
+          expectedSha256 = update.checksum,
+          cancelled = cancelled,
+        ) { received, total -> emitApkProgress(received, total) }
+
+        mainHandler.post {
+          try {
+            ApkInstaller.launchInstaller(appContext, file)
+            promise.resolve(true)
+          } catch (e: ApkInstaller.ApkInstallException) {
+            promise.reject(e.code, e.message, e)
+          }
+        }
+      } catch (e: ApkInstaller.ApkInstallException) {
+        promise.reject(e.code, e.message, e)
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        promise.reject(ApkInstaller.E_DOWNLOAD, e.message, e)
+      } finally {
+        apkCancel.set(null)
+      }
+    }
+  }
+
+  /** Cancels a running `downloadAndInstallAppUpdate()`; resolves `false` when none runs. */
+  @ReactMethod
+  fun cancelAppUpdateDownload(promise: Promise) {
+    val flag = apkCancel.get()
+    flag?.set(true)
+    promise.resolve(flag != null)
+  }
+
+  /** Opens the APK link in a browser. Kept as a fallback; prefer `downloadAndInstallAppUpdate()`. */
   @ReactMethod
   fun openAppUpdate(url: String?, promise: Promise) {
     val target = url?.takeIf { it.isNotBlank() }
@@ -341,6 +430,26 @@ class OtaClientModule(reactContext: ReactApplicationContext) :
     val isStaged = staged?.downloadDir?.absolutePath == running.absolutePath
 
     return if (isStaged) running else null
+  }
+
+  /** APK download progress; [ApkInstaller] already throttles the calls. */
+  private fun emitApkProgress(received: Long, total: Long) {
+    if (!reactApplicationContext.hasActiveReactInstance()) {
+      return
+    }
+
+    val payload = Arguments.createMap().apply {
+      putDouble("downloaded", received.toDouble())
+      if (total > 0) {
+        putDouble("total", total.toDouble())
+        putInt("percent", ((received * 100) / total).toInt().coerceIn(0, 100))
+      } else {
+        putNull("total")
+        putNull("percent")
+      }
+    }
+
+    reactApplicationContext.emitDeviceEvent(EVENT_APK_PROGRESS, payload)
   }
 
   private fun emitProgress(downloaded: Long, total: Long?) {
@@ -511,4 +620,5 @@ private const val E_DOWNLOAD = "E_OTA_DOWNLOAD"
 private const val E_SWAP = "E_OTA_SWAP"
 private const val E_EVENT = "E_OTA_EVENT"
 private const val E_NO_VERSION_UPDATE = "E_OTA_NO_VERSION_UPDATE"
+private const val E_APK_BUSY = "E_OTA_APK_BUSY"
 private const val E_UNKNOWN = "E_OTA_UNKNOWN"

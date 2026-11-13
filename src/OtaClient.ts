@@ -161,7 +161,65 @@ export const OtaClient = {
     return unwrap(requireNative().getAppUpdateUrl());
   },
 
-  /** Opens the APK download URL with `ACTION_VIEW` (browser / package installer). */
+  /** `true` when the engine can download and install a new APK inside the app (1.5.0+). */
+  supportsInAppAppUpdate(): boolean {
+    return isNativeAvailable() && typeof requireNative().downloadAndInstallAppUpdate === 'function';
+  },
+
+  /** Whether the app may open the package installer ("install unknown apps" on Android 8+). */
+  async canInstallAppUpdate(): Promise<boolean> {
+    const native = requireNative();
+    return native.canInstallAppUpdate ? unwrap(native.canInstallAppUpdate()) : false;
+  },
+
+  /** Opens the system "install unknown apps" toggle for this app. */
+  async openInstallSettings(): Promise<boolean> {
+    const native = requireNative();
+    return native.openInstallSettings ? unwrap(native.openInstallSettings()) : false;
+  },
+
+  /**
+   * Downloads the new APK reported by the last `checkUpdate()` inside the app —
+   * no browser — verifies it against the server's SHA-256 and opens the system
+   * installer. Progress arrives on `addAppUpdateProgressListener`.
+   *
+   * Rejects with a `code` from `OTA_APK_ERRORS`, notably `installPermission`
+   * when the user has not allowed installs yet (see `openInstallSettings()`).
+   */
+  async downloadAndInstallAppUpdate(): Promise<boolean> {
+    const native = requireNative();
+
+    if (!native.downloadAndInstallAppUpdate) {
+      throw new Error('This build of the ota-client engine cannot install app updates in-app; rebuild the app.');
+    }
+
+    return unwrap(native.downloadAndInstallAppUpdate());
+  },
+
+  /** Cancels a running `downloadAndInstallAppUpdate()`. */
+  async cancelAppUpdateDownload(): Promise<boolean> {
+    const native = requireNative();
+    return native.cancelAppUpdateDownload ? unwrap(native.cancelAppUpdateDownload()) : false;
+  },
+
+  /** Subscribes to in-app APK download progress. Returns an unsubscribe function. */
+  addAppUpdateProgressListener(listener: OtaDownloadListener): () => void {
+    const emitter = getEmitter();
+    const subscription = emitter?.addListener(OTA_EVENTS.apkProgress, (payload: unknown) => {
+      const event = payload as OtaDownloadProgress | undefined;
+
+      if (event && typeof event.downloaded === 'number') {
+        listener(event);
+      }
+    });
+
+    return () => subscription?.remove();
+  },
+
+  /**
+   * Opens the APK download URL with `ACTION_VIEW` (a browser). Fallback only:
+   * prefer `downloadAndInstallAppUpdate()`, which stays inside the app.
+   */
   async openAppUpdate(options: OpenAppUpdateOptions = {}): Promise<boolean> {
     const url = options.url ?? (await this.getAppUpdateUrl());
     return unwrap(requireNative().openAppUpdate(url));

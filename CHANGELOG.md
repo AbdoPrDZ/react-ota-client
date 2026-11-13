@@ -4,6 +4,48 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - Unreleased
+
+### Changed
+
+- **New app versions install inside the app, not through the browser.**
+  `openAppUpdate()` from the provider (and the overlay's "Download new version"
+  button) now downloads the APK in-process with a progress bar and a Cancel
+  button, verifies it against the server's SHA-256
+  (`availableUpdates.version.checksum`) and the APK signature bytes, and hands it
+  to the system package installer through the library's own `FileProvider`. The
+  native-first `OtaSplashActivity` does the same. Ported from OTAStore's
+  `ApkInstaller`.
+- When the app may not install packages yet, the "install unknown apps" setting
+  opens and `error` carries `code: E_OTA_INSTALL_PERMISSION`; tapping again after
+  allowing it continues. The browser link is used only by an engine built
+  without the new native code.
+- **The package ships built JavaScript instead of TypeScript sources.**
+  `main` is now `dist/index.js`, one minified CommonJS bundle built with
+  esbuild; `types` is `dist/types/index.d.ts`, and the `ota-client` bin is the
+  minified `dist/cli/index.js`. The `react-native` and `source` fields are gone,
+  so Metro and TypeScript read only `dist/`. The Kotlin engine still ships as
+  source, since the host app compiles it.
+- `npm run build` writes `dist/`, which isn't committed. `prepare` runs it, so
+  `npm install github:AbdoPrDZ/react-ota-client#…` builds the package on
+  install; `prepublishOnly` runs the typecheck. `.npmignore` replaces the
+  `files` list and keeps `src/`, `cli/` and `scripts/` out of the package.
+
+### Added
+
+- `OtaClient.downloadAndInstallAppUpdate()`, `canInstallAppUpdate()`,
+  `openInstallSettings()`, `cancelAppUpdateDownload()`,
+  `addAppUpdateProgressListener()` and `supportsInAppAppUpdate()`;
+  `OTA_APK_ERRORS` and `errorCode()`; context `cancelAppUpdate()` and
+  `downloadKind`; overlay copy `downloadingVersionTitle` and `cancelLabel`.
+- Native: `com.otaclient.ota.ApkInstaller`, `OtaApkFileProvider` (authority
+  `${applicationId}.otaclient.apkprovider`), `UpdateInfo.checksum` and
+  `OTAClient.pendingVersionUpdate()`.
+
+### Fixed
+
+- `BuildConfig.LIBRARY_VERSION` reported `1.2.0`.
+
 ## [1.4.0] - 2026-10-05
 
 ### Added

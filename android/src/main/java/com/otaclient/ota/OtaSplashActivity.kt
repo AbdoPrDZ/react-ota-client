@@ -93,9 +93,7 @@ class OtaSplashActivity : AppCompatActivity() {
             message = getString(R.string.ota_app_update_message),
           )
 
-          if (accepted) {
-            val url = withContext(Dispatchers.IO) { client().appUpdateUrl(check) }
-            OtaConfig.openDownloadUrl(this@OtaSplashActivity, url)
+          if (accepted && installAppUpdate(check)) {
             finish()
           } else {
             launchOtaMain()
@@ -142,6 +140,44 @@ class OtaSplashActivity : AppCompatActivity() {
     OtaConfig.restart(this)
 
     return true
+  }
+
+  /**
+   * Downloads the new APK in-app and opens the system installer.
+   *
+   * @return `true` once the installer is shown. `false` when the app may not
+   *   install packages yet (the setting is opened; the next launch offers the
+   *   update again) or the download failed: the current app starts instead.
+   */
+  private suspend fun installAppUpdate(check: CheckUpdate): Boolean {
+    if (!ApkInstaller.canInstall(this)) {
+      ApkInstaller.openInstallSettings(this)
+      return false
+    }
+
+    val update = client().pendingVersionUpdate(check) ?: return false
+
+    setStatus(getString(R.string.ota_downloading_unknown_size))
+
+    return try {
+      val file = withContext(Dispatchers.IO) {
+        ApkInstaller.download(
+          context = this@OtaSplashActivity,
+          url = client().appUpdateUrl(check),
+          fileName = "${OtaHost.packageName(this@OtaSplashActivity)}-${update.name}.apk",
+          expectedSha256 = update.checksum,
+        ) { received, total ->
+          runOnUiThread { onDownloadProgress(received, total.takeIf { it > 0 }) }
+        }
+      }
+
+      ApkInstaller.launchInstaller(this, file)
+      true
+    } catch (e: ApkInstaller.ApkInstallException) {
+      Log.w(TAG, "In-app APK update failed (${e.code})", e)
+      setStatus(getString(R.string.ota_download_failed))
+      false
+    }
   }
 
   private fun onDownloadProgress(downloaded: Long, total: Long?) {

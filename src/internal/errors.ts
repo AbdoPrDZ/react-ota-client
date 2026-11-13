@@ -40,6 +40,29 @@ export class OtaNotConfiguredError extends Error {
   }
 }
 
+/** Error codes of the in-app APK update (`OtaClient.downloadAndInstallAppUpdate`). */
+export const OTA_APK_ERRORS = {
+  /** The user has not allowed this app to install packages ("install unknown apps"). */
+  installPermission: 'E_OTA_INSTALL_PERMISSION',
+  cancelled: 'E_OTA_APK_CANCELLED',
+  checksum: 'E_OTA_APK_CHECKSUM',
+  notApk: 'E_OTA_NOT_APK',
+  http: 'E_OTA_APK_HTTP',
+  download: 'E_OTA_APK_DOWNLOAD',
+  install: 'E_OTA_APK_INSTALL',
+  busy: 'E_OTA_APK_BUSY',
+} as const;
+
+/** The bridge `code` of an error (React Native puts it on `error.code`), if any. */
+export function errorCode(error: unknown): string | null {
+  const code = (error as { code?: unknown } | null)?.code;
+
+  if (typeof code === 'string') return code;
+  if (error instanceof Error && error.name.startsWith('E_')) return error.name;
+
+  return null;
+}
+
 /** Normalises anything thrown by the bridge into a real `Error`. */
 export function toError(value: unknown): Error {
   if (value instanceof Error) {

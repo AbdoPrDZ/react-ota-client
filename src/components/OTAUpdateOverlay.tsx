@@ -26,6 +26,9 @@ export interface OTAUpdateOverlayCopy {
   restartingLabel: string;
   retryLabel: string;
   unknownSizeLabel: string;
+  /** Title while a new APK downloads inside the app. */
+  downloadingVersionTitle: string;
+  cancelLabel: string;
   /** Shown instead of `updateTitle` when the server forces the update. */
   requiredTitle: string;
   /** Prepended to the body when the server forces the update. */
@@ -73,6 +76,8 @@ const defaultCopy: OTAUpdateOverlayCopy = {
   restartingLabel: 'Installing update',
   retryLabel: 'Retry',
   unknownSizeLabel: 'Downloading update',
+  downloadingVersionTitle: 'Downloading new version',
+  cancelLabel: 'Cancel',
   requiredTitle: 'Update required',
   requiredMessage: 'This update is required. Install it to continue.',
 };
@@ -98,8 +103,20 @@ export function OTAUpdateOverlay({
   progressFillStyle,
   testID = 'ota-update-overlay',
 }: OTAUpdateOverlayProps) {
-  const { status, check, progress, error, dismissed, forceUpdate, downloadAndInstall, openAppUpdate, dismissUpdate, retry } =
-    useOtaContext();
+  const {
+    status,
+    check,
+    progress,
+    error,
+    dismissed,
+    forceUpdate,
+    downloadKind,
+    downloadAndInstall,
+    openAppUpdate,
+    cancelAppUpdate,
+    dismissUpdate,
+    retry,
+  } = useOtaContext();
 
   const texts = useMemo(() => ({ ...defaultCopy, ...copy }), [copy]);
 
@@ -112,7 +129,10 @@ export function OTAUpdateOverlay({
   }
 
   const installing = status === 'downloading';
+  const downloadingApp = installing && downloadKind === 'app';
   const failed = status === 'failed' && error;
+  // e.g. "allow installs" or a failed APK download, shown under the prompt.
+  const notice = !failed && !installing && error ? error.message : null;
   const bundleUpdate = check?.haveBundleUpdate ?? false;
   const versionUpdate = showAppVersionUpdate && (check?.haveVersionUpdate ?? false);
   // A forced update removes every escape hatch the overlay owns.
@@ -147,7 +167,9 @@ export function OTAUpdateOverlay({
 
   const title = failed
     ? 'Update failed'
-    : installing
+    : downloadingApp
+      ? texts.downloadingVersionTitle
+      : installing
       ? texts.restartingLabel
       : forceUpdate
         ? texts.requiredTitle
@@ -179,6 +201,7 @@ export function OTAUpdateOverlay({
         <View style={[styles.card, cardStyle]}>
           <Text style={[styles.title, titleStyle]}>{title}</Text>
           <Text style={[styles.message, messageStyle]}>{body}</Text>
+          {notice ? <Text style={[styles.message, styles.notice, messageStyle]}>{notice}</Text> : null}
 
           {installing ? (
             progressPercent == null ? (
@@ -212,6 +235,23 @@ export function OTAUpdateOverlay({
                 ]}
               >
                 <Text style={styles.primaryLabel}>{texts.retryLabel}</Text>
+              </Pressable>
+            </View>
+          ) : downloadingApp ? (
+            <View style={styles.actions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void cancelAppUpdate();
+                }}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  secondaryButtonStyle,
+                  pressed && styles.pressed,
+                ]}
+                testID={`${testID}-cancel-download`}
+              >
+                <Text style={styles.secondaryLabel}>{texts.cancelLabel}</Text>
               </Pressable>
             </View>
           ) : (
@@ -298,6 +338,10 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: otaColors.body,
     marginBottom: otaSpacing.lg,
+  },
+  notice: {
+    marginTop: -otaSpacing.sm,
+    color: otaColors.danger,
   },
   indeterminate: {
     marginBottom: otaSpacing.lg,

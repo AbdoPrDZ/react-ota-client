@@ -19,6 +19,8 @@ import {
 /** Event names emitted by the native module. */
 export const OTA_EVENTS = {
   progress: 'otaClient:downloadProgress',
+  /** In-app APK download progress (`downloadAndInstallAppUpdate`). */
+  apkProgress: 'otaClient:apkProgress',
   error: 'otaClient:error',
 } as const;
 
@@ -41,6 +43,11 @@ interface OtaNativeModule {
   cleanupOldBundles(keep: number): Promise<number>;
   getAppUpdateUrl(): Promise<string>;
   openAppUpdate(url: string): Promise<boolean>;
+  /** Missing on engines older than 1.5.0. */
+  canInstallAppUpdate?(): Promise<boolean>;
+  openInstallSettings?(): Promise<boolean>;
+  downloadAndInstallAppUpdate?(): Promise<boolean>;
+  cancelAppUpdateDownload?(): Promise<boolean>;
   restartApp(): Promise<void>;
   reportEvent(event: OtaReportEvent, meta: string | null): Promise<boolean>;
   addListener(eventName: string): void;

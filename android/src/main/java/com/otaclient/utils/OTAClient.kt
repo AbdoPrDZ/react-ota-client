@@ -10,6 +10,7 @@ import com.otaclient.data.AppInfo
 import com.otaclient.data.CheckUpdate
 import com.otaclient.data.DownloadBundle
 import com.otaclient.data.Manifest
+import com.otaclient.data.UpdateInfo
 import com.otaclient.ota.OtaConfig
 import com.otaclient.ota.OtaHost
 import com.otaclient.ota.OtaServerConfig
@@ -270,10 +271,14 @@ class OTAClient private constructor(private val appContext: Context) {
     }
   }
 
+  /** The new app version reported by the last [checkUpdate], if any. */
+  fun pendingVersionUpdate(check: CheckUpdate? = lastCheck): UpdateInfo? =
+    check?.appInfo?.availableUpdates?.version
+
   /**
    * Download URL for a new APK. The API key, session token and device id travel
-   * as query parameters because the request is opened by a browser, which cannot
-   * set headers.
+   * as query parameters, so the same URL works in-app ([ApkInstaller]) and when
+   * opened by a browser, which cannot set headers.
    */
   fun appUpdateUrl(check: CheckUpdate = lastCheck ?: CheckUpdate(false, false, false, null)): String {
     val settings = config

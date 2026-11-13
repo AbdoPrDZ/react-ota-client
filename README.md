@@ -295,8 +295,9 @@ on the second launch.
   `package`, `version` (APK `versionName`) and `bundle` (active manifest version)
 - `downloadBundle()` — `GET {base}/ota-client/{version}/app/update/bundle/{id}`
   with `Authorization: Bearer {session}`
-- new APK — `GET {base}/ota-client/{version}/app/update/version/{id}?did={androidId}&token={session}`,
-  opened with `ACTION_VIEW`
+- new APK — `GET {base}/ota-client/{version}/app/update/version/{id}?did={androidId}&token={session}&api_key=…`,
+  downloaded **inside the app** and handed to the system installer (see
+  [Installing a new app version](#installing-a-new-app-version))
 
 Every request carries `API-KEY` and
 `X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…`.
@@ -332,18 +333,47 @@ OtaClient.revertToEmbeddedBundle(): Promise<boolean>
 OtaClient.cleanupOldBundles(keep?): Promise<number>
 OtaClient.getBundleInfo(): Promise<OtaBundleInfo>
 
+OtaClient.canInstallAppUpdate(): Promise<boolean>         // "install unknown apps" allowed?
+OtaClient.openInstallSettings(): Promise<boolean>
+OtaClient.downloadAndInstallAppUpdate(): Promise<boolean> // in-app APK download → system installer
+OtaClient.cancelAppUpdateDownload(): Promise<boolean>
+OtaClient.addAppUpdateProgressListener(cb): () => void
 OtaClient.getAppUpdateUrl(): Promise<string>
-OtaClient.openAppUpdate({ url? }): Promise<boolean>
+OtaClient.openAppUpdate({ url? }): Promise<boolean>        // browser fallback
 OtaClient.restartApp(): Promise<void>
 OtaClient.reportEvent(event, payload?): Promise<boolean>   // activity log → server
 OtaClient.addDownloadProgressListener(cb): () => void
 OtaClient.addErrorListener(cb): () => void
 ```
 
-`getAppUpdateUrl()` returns an APK link that the OS opens in a browser, so it carries
-the API key (and device id) as query parameters — a browser cannot send the
-`API-KEY` header. Needs a server that accepts the key from the query
-(OTACenter 1.5.2+).
+### Installing a new app version
+
+A new APK installs **inside the app**: `useOTA().openAppUpdate()` (what the
+overlay's "Download new version" button calls) downloads it in-process with
+progress and a Cancel button, checks it against the server's SHA-256 and the
+APK signature bytes, and opens the system installer. The download uses
+`HttpURLConnection`, so the app's `network_security_config` applies (plain-HTTP
+dev servers work when allowed there).
+
+Android requires the user to allow the app to install packages once ("install
+unknown apps"). When that is off, `openAppUpdate()` opens the setting and sets
+`error` with `code === OTA_APK_ERRORS.installPermission`; the overlay shows it,
+and tapping again after allowing it continues. The system's own confirmation
+dialog cannot be skipped.
+
+```tsx
+const { openAppUpdate, cancelAppUpdate, downloadKind, progress, error } = useOTA();
+```
+
+The library declares `REQUEST_INSTALL_PACKAGES` and a `FileProvider`
+(`${applicationId}.otaclient.apkprovider`). Apps on Google Play may not use
+that permission without approval; remove it with
+`<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />`
+and use `OtaClient.openAppUpdate()` (browser) instead.
+
+`getAppUpdateUrl()` carries the API key and device id as query parameters, so the
+same link works in-app and from a browser, which cannot send the `API-KEY`
+header. Needs a server that accepts the key from the query (OTACenter 1.5.2+).
 
 ### Hooks
 

@@ -59,6 +59,8 @@ export { OTAImage } from './components/OTAImage';
 export type { OTAImageProps } from './components/OTAImage';
 
 export {
+  errorCode,
+  OTA_APK_ERRORS,
   OtaLinkingError,
   OtaNotConfiguredError,
   OtaUnsupportedPlatformError,

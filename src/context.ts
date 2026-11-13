@@ -24,8 +24,16 @@ export interface OtaActions {
   revertToEmbedded(): Promise<void>;
   /** Relaunches the app without changing bundles. */
   restart(): Promise<void>;
-  /** Opens the APK download URL for a pending app-version update. */
+  /**
+   * Installs a pending app-version update: downloads the APK inside the app
+   * (progress in `progress`) and opens the system installer. When the app may
+   * not install packages yet, opens that setting and sets `error` with code
+   * `E_OTA_INSTALL_PERMISSION`; call it again once the user allowed it. Falls
+   * back to the browser only on an engine without in-app support.
+   */
   openAppUpdate(): Promise<void>;
+  /** Cancels an in-app APK download started by `openAppUpdate()`. */
+  cancelAppUpdate(): Promise<void>;
   /**
    * Confirms the running bundle booted fine, so the engine will not revert it on
    * the next launch. `OTAProvider` does this automatically shortly after mount;
@@ -54,6 +62,8 @@ export interface OtaContextValue extends OtaActions {
    * this too (block navigation / hide their own skip).
    */
   forceUpdate: boolean;
+  /** What is downloading while `status` is `downloading`: a JS bundle or a new APK. */
+  downloadKind: 'bundle' | 'app' | null;
 }
 
 export const OtaContext = createContext<OtaContextValue | null>(null);
