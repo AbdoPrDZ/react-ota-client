@@ -24,14 +24,13 @@ const dryRun = process.argv.includes('--dry-run');
 const isWindows = process.platform === 'win32';
 
 function run(command, args, { capture = false, allowFail = false } = {}) {
-  // npm is a .cmd script on Windows, which only starts through a shell.
-  const useShell = isWindows && command === 'npm';
-  const result = spawnSync(command, args, {
-    cwd: root,
-    stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
-    encoding: 'utf8',
-    shell: useShell,
-  });
+  const options = { cwd: root, stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', encoding: 'utf8' };
+  // npm is a .cmd script on Windows, which only starts through a shell; the
+  // shell gets one quoted command line rather than an argument list.
+  const result =
+    isWindows && command === 'npm'
+      ? spawnSync([command, ...args.map((arg) => (/[\s"&|<>^]/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg))].join(' '), { ...options, shell: true })
+      : spawnSync(command, args, options);
 
   if (result.error) throw result.error;
   if (result.status !== 0 && !allowFail) {
@@ -87,13 +86,11 @@ function main() {
   step('Checking versions');
   const notes = changelogSection(version);
   const gradle = path.join(root, 'android', 'build.gradle');
-  if (fs.existsSync(gradle)) {
-    const match = fs.readFileSync(gradle, 'utf8').match(/LIBRARY_VERSION",\s*"\\"([^"\\]+)\\""/);
-    if (match && match[1] !== version) {
-      fail(`LIBRARY_VERSION in android/build.gradle is ${match[1]}, package.json is ${version}`);
-    }
+  const match = fs.existsSync(gradle) && fs.readFileSync(gradle, 'utf8').match(/LIBRARY_VERSION",\s*"\\"([^"\\]+)\\""/);
+  if (match && match[1] !== version) {
+    fail(`LIBRARY_VERSION in android/build.gradle is ${match[1]}, package.json is ${version}`);
   }
-  process.stdout.write(`package.json, CHANGELOG${fs.existsSync(gradle) ? ' and build.gradle' : ''} agree on ${version}\n`);
+  process.stdout.write(`package.json, CHANGELOG${match ? ' and LIBRARY_VERSION' : ''} agree on ${version}\n`);
 
   step('Checking accounts');
   const npmUser = run('npm', ['whoami'], { capture: true, allowFail: true });
@@ -115,13 +112,19 @@ function main() {
     run('npm', args); // inherits the terminal, so npm can ask for a one-time password
   }
 
+  const tagExists = run('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}`], { capture: true }).out !== '';
+  const releaseExists = run('gh', ['release', 'view', tag], { capture: true, allowFail: true }).ok;
+
   if (dryRun) {
-    step(`Dry run done. A real run would also push the tag ${tag} and create the GitHub release.`);
+    step(
+      'Dry run done. A real run would also: ' +
+        `${tagExists ? `keep the existing tag ${tag}` : `push the tag ${tag}`}, ` +
+        `${releaseExists ? 'keep the existing GitHub release' : 'create the GitHub release'}.`,
+    );
     return;
   }
 
   // 2. Git tag.
-  const tagExists = run('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}`], { capture: true }).out !== '';
   if (tagExists) {
     step(`Tag ${tag} is already on GitHub; skipping`);
   } else {
@@ -133,7 +136,7 @@ function main() {
   }
 
   // 3. GitHub release, with the CHANGELOG entry as its notes.
-  if (run('gh', ['release', 'view', tag], { capture: true, allowFail: true }).ok) {
+  if (releaseExists) {
     step(`GitHub release ${tag} already exists; skipping`);
   } else {
     step(`Creating the GitHub release ${tag}`);

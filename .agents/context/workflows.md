@@ -48,9 +48,18 @@ Uploading is done in the OTACenter dashboard (this CLI has no publish command;
 
 ## Releasing the package
 
-1. Update `CHANGELOG.md`, bump `version` in `package.json` and
-   `LIBRARY_VERSION` in `android/build.gradle` (they must match).
-2. `npm run typecheck`, `npm pack --dry-run`.
-3. Commit and tag `vX.Y.Z`; consumers pin the tag
-   (`npm install github:AbdoPrDZ/react-ota-client#vX.Y.Z`). Not on the npm
-   registry yet.
+Published on npm (`react-ota-client`). Releases run from a developer machine,
+not CI (GitHub Actions is unavailable on this account):
+
+1. Bump `version` in `package.json` and `LIBRARY_VERSION` in
+   `android/build.gradle` (they must match), add and date the `CHANGELOG.md`
+   entry (`## [x.y.z] - YYYY-MM-DD`), commit and push `main`.
+2. `npm run release -- --dry-run`, then `npm run release`
+   (`scripts/release.js`): checks a clean, pushed `main`, the dated entry and
+   `LIBRARY_VERSION`, `npm publish` (typecheck via `prepublishOnly`), pushes
+   tag `vX.Y.Z`, and creates the GitHub release with the CHANGELOG notes.
+   Each step skips if already done. Pre-release versions go to the `next`
+   dist-tag.
+
+Needs `npm login` (or a token in `~/.npmrc`) and `gh auth login`. Git
+consumers can still pin a tag (`github:AbdoPrDZ/react-ota-client#vX.Y.Z`).
